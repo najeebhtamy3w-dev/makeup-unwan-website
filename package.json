@@ -1,8 +1,25 @@
 {
-  "name": "makeup-unwan-feedback",
+  "name": "makeup-unwan-site",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.2.2",
+  "type": "module",
+  "scripts": {
+    "build:config": "node tools/build-config.mjs",
+    "check:config": "node tools/build-config.mjs --check",
+    "test": "node tests/run-all.mjs",
+    "test:backend": "node --import ./tests/stub/register.mjs tests/backend.test.mjs",
+    "test:browser": "node --import ./tests/stub/register.mjs tests/browser.test.mjs",
+    "test:smoke-local": "node --import ./tests/stub/register.mjs tests/smoke-selftest.mjs",
+    "install:browsers": "playwright install chromium"
+  },
   "dependencies": {
-    "@netlify/blobs": "^9.0.0"
+    "@netlify/blobs": "10.7.8"
+  },
+  "description": "Makeup House + Unwan Al Atr public site and admin dashboard (release candidate)",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
   }
 }
