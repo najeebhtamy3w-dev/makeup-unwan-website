@@ -4,6 +4,8 @@ import {onRequestGet} from '../../functions/api/health.js';
 const denied=await onRequest({request:new Request('https://staging.example/.netlify/functions/feedback'),next:()=>new Response('static')});
 assert.equal(denied.status,503);
 assert.equal((await denied.json()).error,'Backend not available on this staging deployment');
+const community=await onRequest({request:new Request('https://staging.example/.netlify/functions/community'),next:()=>new Response('community-handler')});
+assert.equal(await community.text(),'community-handler');
 const passthrough=await onRequest({request:new Request('https://staging.example/index.html'),next:()=>new Response('static')});
 assert.equal(await passthrough.text(),'static');
 const disabled=await onRequestGet({env:{DEPLOYMENT_ENV:'production'}});
