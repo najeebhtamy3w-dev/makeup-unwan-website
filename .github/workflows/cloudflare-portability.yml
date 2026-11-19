@@ -42,5 +42,9 @@ jobs:
         run: node cloudflare/tests/admin-routes.test.mjs
       - name: Check atomic API contract mock
         run: node cloudflare/tests/atomic-contract.test.mjs
+      - name: Install local Cloudflare D1 runtime
+        run: npm install --no-save --package-lock=false miniflare@3
+      - name: Check local Cloudflare D1 integration
+        run: node cloudflare/tests/d1-local-integration.test.mjs
       - name: Check SQLite schema and concurrent uniqueness
         run: python3 cloudflare/tests/sqlite-invariants.py
