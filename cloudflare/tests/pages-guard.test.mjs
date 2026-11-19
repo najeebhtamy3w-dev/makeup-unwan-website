@@ -1,9 +1,13 @@
 import assert from 'node:assert/strict';
 import {onRequest} from '../../functions/_middleware.js';
 import {onRequestGet} from '../../functions/api/health.js';
-const denied=await onRequest({request:new Request('https://staging.example/.netlify/functions/feedback'),next:()=>new Response('static')});
+const denied=await onRequest({request:new Request('https://staging.example/.netlify/functions/unported'),next:()=>new Response('static')});
 assert.equal(denied.status,503);
 assert.equal((await denied.json()).error,'Backend not available on this staging deployment');
+for(const route of ['community','feedback','track-click','admin-feedback','admin-clicks']){
+ const allowed=await onRequest({request:new Request('https://staging.example/.netlify/functions/'+route),next:()=>new Response('handler')});
+ assert.equal(await allowed.text(),'handler',route+' should pass through');
+}
 const community=await onRequest({request:new Request('https://staging.example/.netlify/functions/community'),next:()=>new Response('community-handler')});
 assert.equal(await community.text(),'community-handler');
 const passthrough=await onRequest({request:new Request('https://staging.example/index.html'),next:()=>new Response('static')});
