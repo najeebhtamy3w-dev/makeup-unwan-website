@@ -78,8 +78,12 @@ const csvOf = async (page, sel) => { const [dl] = await Promise.all([page.waitFo
   const exp = (h) => h.startsWith('tel:') ? 'phone' : /wa\.me/.test(h) ? 'whatsapp' : /chat\.whatsapp/.test(h) ? 'whatsapp_group' : /whatsapp\.com\/channel/.test(h) ? 'whatsapp_channel' : /instagram/.test(h) ? 'instagram' : /facebook/.test(h) ? 'facebook' : /maps/.test(h) ? 'maps' : '?';
   await T('AT1', 'all 22 contact links present, channel matches href type, store matches its section', async () => {
     eq(links.length, 22); for (const l of links) { eq(exp(l.h), l.c, l.h); eq(l.sec, l.s, l.h); }
-    const hrefs = (t) => [...t.matchAll(/<a\b[^>]*href="([^"]+)"/g)].map((m) => m[1]).sort().join('\n'); eq(hrefs(fs.readFileSync(path.join(PUB, 'index.html'), 'utf8')), fs.readFileSync(path.join(ROOT, 'tests/fixtures/v1.2-index-anchor-hrefs.txt'), 'utf8').trim(), 'every <a href> identical to V1.2 original (fixture)');
-    return '22 links OK; all anchor hrefs byte-identical to the V1.2 package'; }, 'browser');
+    const hrefs = (t) => [...t.matchAll(/<a\b[^>]*href="([^"]+)"/g)].map((m) => m[1]);
+    const actualHrefs = hrefs(fs.readFileSync(path.join(PUB, 'index.html'), 'utf8'));
+    const baselineHrefs = fs.readFileSync(path.join(ROOT, 'tests/fixtures/v1.2-index-anchor-hrefs.txt'), 'utf8').trim().split('\n');
+    eq(actualHrefs.filter((h) => h !== './masahatak.html').sort().join('\n'), baselineHrefs.sort().join('\n'), 'all V1.2 links unchanged; only the approved community entry may be added');
+    eq(actualHrefs.filter((h) => h === './masahatak.html').length, 1, 'exactly one community entry link');
+    return '22 contact links unchanged; original anchor hrefs preserved; exactly one approved community link'; }, 'browser');
   await T('AT-CSP1', 'index: CSP header present, no CSP violations, no page errors', async () => {
     const c = resp.headers()['content-security-policy']; ok(c && c.includes("frame-ancestors 'none'") && !c.includes('unsafe-eval')); eq(csp.length, 0, csp.join('|')); eq(errs.length, 0, errs.join('|')); return 'ok'; }, 'browser');
   await T('AT-CSP2', 'CSP actually blocks an injected inline script', async () => { await page.evaluate(() => { const s = document.createElement('script'); s.textContent = 'window.__inj=1'; document.body.append(s); }); eq(await page.evaluate(() => window.__inj === 1), false); csp.length = 0; return 'blocked'; }, 'browser');
@@ -184,8 +188,9 @@ async function adminPage(opts = {}) { const ctx = await br.newContext(opts.ctx |
   await T('AT14b', 'public site at 360px: no horizontal overflow, no page errors', async () => { const o = await ip.evaluate(() => document.documentElement.scrollWidth - innerWidth); const w = await ip.evaluate(overflowProbe); ok(o <= 0 && !w, 'overflow ' + o + ' ' + w); await ip.screenshot({ path: path.join(OUT, 'index-360.png') }); return 'overflow=' + o; }, 'browser'); await c.close();
 }
 /* layout / publish */
-await T('AT13', 'public/ holds only the two pages; source, package.json, docs, tests are NOT in the published folder or served', async () => {
-  const files = fs.readdirSync(PUB).sort(); eq(files.join(), 'admin.html,index.html');
+await T('AT13', 'public/ contains only approved V1.2 pages and V1.3.1 community assets; source, package.json, docs, tests are NOT published', async () => {
+  const files = fs.readdirSync(PUB).sort();
+  eq(files.join(), ['admin.html', 'community-admin.html', 'index.html', 'masahatak.html', 'masahatak.js'].join(','), 'exact approved publish allowlist');
   for (const p of ['/netlify/functions/track-click.mjs', '/netlify/lib/common.mjs', '/package.json', '/netlify.toml', '/docs/archive/README-AR.txt', '/tests/backend.test.mjs']) { const r = await fetch(base + p); eq(r.status, 404, p); }
   eq(toml.build.publish, 'public'); eq(toml.build.functions, 'netlify/functions'); ok(toml.redirects.length >= 6); return 'published=' + files.join('+') + '; 6 probe paths -> 404 (local server of public/ only; Netlify itself NOT TESTED)'; }, 'static');
 await T('AT13b', 'netlify.toml is in sync with the inline scripts (CSP hashes)', async () => { execFileSync('node', [path.join(ROOT, 'tools/build-config.mjs'), '--check']); return 'in sync'; }, 'static');
