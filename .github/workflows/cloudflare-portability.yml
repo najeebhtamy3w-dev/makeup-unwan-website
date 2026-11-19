@@ -24,6 +24,9 @@ jobs:
           node --check functions/_middleware.js
           node --check functions/api/health.js
           node --check functions/.netlify/functions/community.js
+          node --check functions/.netlify/functions/feedback.js
+          node --check functions/.netlify/functions/track-click.js
+          node --check cloudflare/lib/admin-auth.mjs
           node --check cloudflare/lib/community-atomic.mjs
           node --check cloudflare/lib/atomic-rate-limit.mjs
           node --check cloudflare/lib/d1-store.mjs
@@ -31,6 +34,8 @@ jobs:
         run: node cloudflare/tests/pages-guard.test.mjs
       - name: Check staging community API mock
         run: node cloudflare/tests/community-route.test.mjs
+      - name: Check staging feedback and tracking mock
+        run: node cloudflare/tests/intake-route.test.mjs
       - name: Check atomic API contract mock
         run: node cloudflare/tests/atomic-contract.test.mjs
       - name: Check SQLite schema and concurrent uniqueness
