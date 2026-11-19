@@ -6,6 +6,9 @@ CREATE TABLE IF NOT EXISTS community_events (
   owner_hash TEXT NOT NULL,
   discriminator TEXT NOT NULL DEFAULT '',
   choice INTEGER CHECK(choice IS NULL OR choice IN (0,1)),
+  CHECK ((kind = 'vote' AND choice IN (0,1) AND discriminator = '') OR
+         (kind = 'reaction' AND choice IS NULL AND discriminator IN ('❤️','🌸','✨','👏','💡')) OR
+         (kind = 'report' AND choice IS NULL AND discriminator = '')),
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY(kind,target_id,owner_hash,discriminator)
 );
