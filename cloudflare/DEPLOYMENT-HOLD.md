@@ -1,0 +1,25 @@
+# Cloudflare Pages staging: deployment HOLD
+
+Current state: Cloudflare storage foundation, atomic event primitives, fixed-window limiter, a staging-only D1 health route, and a **fail-closed** guard for legacy Netlify API URLs. This is NOT a working replacement backend.
+
+Cloudflare Pages reads Pages Functions from repository-root `functions/` and static files from `public/`. Do not confuse this with `cloudflare/functions/`, which is not a Pages Functions route directory.
+
+## Safe build settings (when authorized after tests)
+- GitHub repository: `najeebhtamy3w-dev/makeup-unwan-website`
+- Branch: `work/cloudflare-portability-audit` for engineering tests only
+- Framework preset: None
+- Build command: leave empty (static `public/` output)
+- Build output directory: `public`
+- Set `DEPLOYMENT_ENV=staging`
+- Bind `STAGING_DB` to a **new, empty, dedicated** Cloudflare D1 database.
+- Apply `cloudflare/schema.sql` and `cloudflare/schema-community.sql` to that staging database before testing.
+- No Netlify production credentials, production data, or production domain.
+- Never publish this as a working customer-facing replacement: legacy API paths intentionally return 503.
+
+## Blocking items
+1. Complete route compatibility for community, feedback, tracking, admin statistics, admin inbox.
+2. Port and validate request authentication, CSRF, IP identification and rate limiting.
+3. Verify atomic uniqueness and state transitions in real D1 under concurrency.
+4. Generate Cloudflare security headers matching `netlify.toml` CSP; check admin no-cache/noindex.
+5. Add regression and integration tests, verify in a live staging deployment.
+6. Only then consider an acceptance decision. Keep Netlify and QR unchanged.
