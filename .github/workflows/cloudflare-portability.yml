@@ -1,0 +1,35 @@
+name: Cloudflare portability checks
+on:
+  push:
+    branches:
+      - work/cloudflare-portability-audit
+  pull_request:
+    paths:
+      - 'cloudflare/**'
+      - 'functions/**'
+      - '.github/workflows/cloudflare-portability.yml'
+  workflow_dispatch:
+jobs:
+  portable-staging-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          node --check functions/_middleware.js
+          node --check functions/api/health.js
+          node --check functions/.netlify/functions/community.js
+          node --check cloudflare/lib/community-atomic.mjs
+          node --check cloudflare/lib/atomic-rate-limit.mjs
+          node --check cloudflare/lib/d1-store.mjs
+      - name: Check staging route guard
+        run: node cloudflare/tests/pages-guard.test.mjs
+      - name: Check atomic API contract mock
+        run: node cloudflare/tests/atomic-contract.test.mjs
+      - name: Check SQLite schema and concurrent uniqueness
+        run: python3 cloudflare/tests/sqlite-invariants.py
