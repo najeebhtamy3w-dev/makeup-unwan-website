@@ -29,6 +29,8 @@ jobs:
           node --check cloudflare/lib/d1-store.mjs
       - name: Check staging route guard
         run: node cloudflare/tests/pages-guard.test.mjs
+      - name: Check staging community API mock
+        run: node cloudflare/tests/community-route.test.mjs
       - name: Check atomic API contract mock
         run: node cloudflare/tests/atomic-contract.test.mjs
       - name: Check SQLite schema and concurrent uniqueness
