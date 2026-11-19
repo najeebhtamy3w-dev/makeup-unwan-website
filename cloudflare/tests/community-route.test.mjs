@@ -17,6 +17,7 @@ const db={prepare(sql){return {bind(...args){return {
    return {meta:{changes:1}};
   }
   if(sql.startsWith('INSERT INTO rate_windows'))return {meta:{changes:1}};
+  if(sql.startsWith('UPDATE app_records')){const [value,store,key,previous]=args;const k=store+'|'+key;if(records.get(k)!==previous)return {meta:{changes:0}};records.set(k,value);return {meta:{changes:1}};}
   throw Error('Unexpected SQL '+sql);
  },
  async all(){
@@ -29,10 +30,10 @@ const db={prepare(sql){return {bind(...args){return {
   throw Error('Unexpected SQL '+sql);
  }
 }}}}};
-const env={DEPLOYMENT_ENV:'staging',STAGING_DB:db,RATE_LIMIT_SALT:'a'.repeat(64)};
-async function call(action,method='GET',body,origin='https://staging.example') {
+const env={DEPLOYMENT_ENV:'staging',STAGING_DB:db,RATE_LIMIT_SALT:'a'.repeat(64),ADMIN_PASSWORD:'safe-staging-admin-password-for-tests'};
+async function call(action,method='GET',body,origin='https://staging.example',password) {
  const request=new Request('https://staging.example/.netlify/functions/community?action='+action,{
-  method,headers:{origin,'cf-connecting-ip':'192.0.2.1','user-agent':'Staging-Test'},
+  method,headers:{origin,'cf-connecting-ip':'192.0.2.1','user-agent':'Staging-Test',...(password?{'x-admin-password':password}:{})},
   body:body===undefined?undefined:JSON.stringify(body)
  });
  const res=await onRequest({request,env});
@@ -51,5 +52,15 @@ assert.match(poll.body.id,/^[a-f0-9-]{36}$/);
 const loaded=await call('poll&id='+poll.body.id);
 assert.equal(loaded.status,200);
 assert.deepEqual(loaded.body.counts,[0,0]);
-assert.equal((await call('moderate','POST',{id:poll.body.id,status:'approved'})).status,503);
+assert.equal((await call('admin-list')).status,401);
+assert.equal((await call('admin-list','GET',undefined,'https://staging.example','wrong-password')).status,401);
+const adminPassword=env.ADMIN_PASSWORD;
+const admin=await call('admin-list','GET',undefined,'https://staging.example',adminPassword);
+assert.equal(admin.status,200);
+assert.equal(admin.body.items.length,1);
+const postId=admin.body.items[0].id;
+assert.equal((await call('moderate','POST',{id:postId,status:'approved'},'https://staging.example',adminPassword)).status,200);
+assert.equal((await call('list')).body.items.length,1);
+assert.equal((await call('moderate','POST',{id:postId,status:'invalid'},'https://staging.example',adminPassword)).status,400);
+assert.equal((await call('moderate','POST',{id:poll.body.id,status:'approved'},'https://staging.example',adminPassword)).status,404);
 console.log('PASS Cloudflare community staging handler mock: create/list/poll/validation/origin/fail-closed');
