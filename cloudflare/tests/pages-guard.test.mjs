@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {onRequest} from '../../functions/_.js';
+import {onRequest} from '../../functions/_middleware.js';
 import {onRequestGet} from '../../functions/api/health.js';
 const denied=await onRequest({request:new Request('https://staging.example/.netlify/functions/feedback'),next:()=>new Response('static')});
 assert.equal(denied.status,503);
