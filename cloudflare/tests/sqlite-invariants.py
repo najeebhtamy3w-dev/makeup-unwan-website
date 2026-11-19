@@ -53,5 +53,13 @@ with tempfile.TemporaryDirectory() as tmp:
     con = sqlite3.connect(dbfile)
     assert con.execute("SELECT hits FROM rate_windows").fetchone()[0] == 5
     assert con.execute("SELECT COUNT(*) FROM community_events WHERE kind='vote'").fetchone()[0] == 2
+    for kind, discriminator, choice in [('vote', '', None), ('report', '🌸', None), ('reaction', '', None), ('reaction', '🌸', 1)]:
+        try:
+            con.execute("INSERT INTO community_events(kind,target_id,owner_hash,discriminator,choice) VALUES (?,?,?,?,?)",
+                        (kind, "12345678-1234-1234-1234-123456789abc", "c"*32, discriminator, choice))
+        except sqlite3.IntegrityError:
+            pass
+        else:
+            raise AssertionError(f"Invalid event accepted: {kind}")
     con.close()
 print("PASS SQLite schema: 50 concurrent votes => 1 per owner; 30 concurrent limiter hits => 5 allowed")
