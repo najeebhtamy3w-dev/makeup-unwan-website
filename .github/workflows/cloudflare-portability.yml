@@ -26,6 +26,8 @@ jobs:
           node --check functions/.netlify/functions/community.js
           node --check functions/.netlify/functions/feedback.js
           node --check functions/.netlify/functions/track-click.js
+          node --check functions/.netlify/functions/admin-feedback.js
+          node --check functions/.netlify/functions/admin-clicks.js
           node --check cloudflare/lib/admin-auth.mjs
           node --check cloudflare/lib/community-atomic.mjs
           node --check cloudflare/lib/atomic-rate-limit.mjs
@@ -36,6 +38,8 @@ jobs:
         run: node cloudflare/tests/community-route.test.mjs
       - name: Check staging feedback and tracking mock
         run: node cloudflare/tests/intake-route.test.mjs
+      - name: Check staging admin inbox and click stats mock
+        run: node cloudflare/tests/admin-routes.test.mjs
       - name: Check atomic API contract mock
         run: node cloudflare/tests/atomic-contract.test.mjs
       - name: Check SQLite schema and concurrent uniqueness
