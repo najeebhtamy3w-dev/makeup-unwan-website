@@ -1,6 +1,6 @@
 # Cloudflare Pages staging: deployment HOLD
 
-Current state: Cloudflare storage foundation, atomic event primitives, fixed-window limiter, a staging-only D1 health route, and a **fail-closed** guard for unported legacy Netlify API URLs. Staging community endpoints now include public list, pending submissions, poll creation and retrieval, voting, reactions and reports. Staging admin listing and moderation are now implemented with rate-limited password checks and conditional updates, but are NOT validated on real D1. Remaining backends are NOT ported. This is NOT a working replacement backend.
+Current state: Cloudflare storage foundation, atomic event primitives, fixed-window limiter, a staging-only D1 health route, and a **fail-closed** guard for unported legacy Netlify API URLs. Staging community endpoints now include public list, pending submissions, poll creation and retrieval, voting, reactions and reports. Staging admin listing and moderation are now implemented with rate-limited password checks and conditional updates, but are NOT validated on real D1. Feedback intake and outbound-click tracking are now implemented for isolated staging. Admin feedback inbox and click statistics remain NOT ported. This is NOT a working replacement backend. The new feedback and click handlers use fixed-window rate limits; these are not identical to Netlify sliding windows and require acceptance review.
 
 Cloudflare Pages reads Pages Functions from repository-root `functions/` and static files from `public/`. Do not confuse this with `cloudflare/functions/`, which is not a Pages Functions route directory.
 
@@ -17,7 +17,7 @@ Cloudflare Pages reads Pages Functions from repository-root `functions/` and sta
 - Never publish this as a working customer-facing replacement: legacy API paths intentionally return 503.
 
 ## Blocking items
-1. Verify community admin moderation on real D1; complete route compatibility for feedback, tracking, admin statistics, admin inbox.
+1. Verify community admin moderation on real D1; verify feedback intake and click tracking on real D1; complete admin statistics and admin inbox.
 2. Port and validate request authentication, CSRF, IP identification and rate limiting.
 3. Verify atomic uniqueness and state transitions in real D1 under concurrency. The existing SQLite and JavaScript mock tests do not prove D1 behavior.
 4. Generate Cloudflare security headers matching `netlify.toml` CSP; check admin no-cache/noindex.
