@@ -10,7 +10,8 @@ Cloudflare Pages reads Pages Functions from repository-root `functions/` and sta
 - Framework preset: None
 - Build command: leave empty (static `public/` output)
 - Build output directory: `public`
-- Set `DEPLOYMENT_ENV=staging`\n- Set secrets `RATE_LIMIT_SALT` (at least 32 characters) and `ADMIN_PASSWORD` (at least 20 characters), unique to staging. Never reuse Netlify production secrets.
+- Set `DEPLOYMENT_ENV=staging`
+- Set secrets `RATE_LIMIT_SALT` (at least 32 characters) and `ADMIN_PASSWORD` (at least 20 characters), unique to staging. Never reuse Netlify production secrets.
 - Bind `STAGING_DB` to a **new, empty, dedicated** Cloudflare D1 database.
 - Apply `cloudflare/schema.sql` and `cloudflare/schema-community.sql` to that staging database before testing.
 - No Netlify production credentials, production data, or production domain.
@@ -19,7 +20,7 @@ Cloudflare Pages reads Pages Functions from repository-root `functions/` and sta
 ## Blocking items
 1. Verify community admin moderation on real D1; verify feedback intake and click tracking on real D1; verify admin inbox and click statistics on real D1, including security and result parity.
 2. Port and validate request authentication, CSRF, IP identification and rate limiting.
-3. Verify atomic uniqueness and state transitions in real D1 under concurrency. The existing SQLite and JavaScript mock tests do not prove D1 behavior.
+3. Verify atomic uniqueness and state transitions in real D1 under concurrency. A Miniflare local D1 runtime integration test has been added to CI, but its passing status has not been verified. Even a passing local D1 test does not prove remote D1 behavior or live Pages routing.
 4. Generate Cloudflare security headers matching `netlify.toml` CSP; check admin no-cache/noindex.
-5. Add regression and integration tests, verify in a live staging deployment.
+5. Confirm CI runs and passing results for the new local D1 integration test, then verify in a live staging deployment.
 6. Only then consider an acceptance decision. Keep Netlify and QR unchanged.
