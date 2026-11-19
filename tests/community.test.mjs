@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import {reset,db} from './stub/blobs.mjs';
 process.env.ADMIN_PASSWORD='correct-horse-battery-staple';
@@ -31,3 +32,9 @@ assert.equal((await req('poll-vote',{id:pollId,choice:1},'10.0.0.6'))[0],409);
 assert.equal((await req('poll-vote',{id:pollId,choice:1},'10.0.0.7'))[0],200);
 assert.deepEqual((await req('poll&id='+pollId))[1].counts,[1,1]);
 console.log('PASS community acceptance: moderation, privacy, reports, reactions, cross-client poll voting, input rejection (18 checks)');
+
+// Regression: shared poll URL must forward its ID as a query parameter to the API.
+const communityClient = readFileSync(new URL('../public/masahatak.js', import.meta.url), 'utf8');
+assert.match(communityClient, /async function call\(action,body,query=''/);
+assert.match(communityClient, /\(query\?'&'\+query:''\)/);
+assert.match(communityClient, /call\('poll',null,'id='\+encodeURIComponent\(id\)\)/);
