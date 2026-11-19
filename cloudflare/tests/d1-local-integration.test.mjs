@@ -10,7 +10,8 @@ try{
  const db=await mf.getD1Database('STAGING_DB');
  for(const name of ['schema.sql','schema-community.sql']){
   const sql=await readFile(new URL('../'+name,import.meta.url),'utf8');
-  await db.exec(sql.split('\n').filter(line=>!line.trimStart().startsWith('--')).join('\n'));
+  const statements=sql.split('\n').filter(line=>!line.trimStart().startsWith('--')).join('\n').split(';').map(s=>s.trim()).filter(Boolean);
+  for(const statement of statements) await db.prepare(statement).run();
  }
  const store=createD1Store(db,'customer-feedback');
  await store.setJSON('abc',{message:'test'});
