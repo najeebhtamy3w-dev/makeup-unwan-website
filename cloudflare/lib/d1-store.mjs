@@ -1,7 +1,7 @@
 // Cloudflare D1 storage adapter. Not wired into production or deployed.
 // Uses D1's SQL interface rather than eventually consistent KV.
 const ALLOWED = new Set([
-  'customer-feedback', 'contact-click-events', 'rate-guard', 'community-v1'
+  'customer-feedback', 'contact-click-events', 'rate-guard', 'community-v1', 'community-polls-v1', 'community-events-v2'
 ]);
 function validateStore(name) {
   if (!ALLOWED.has(name)) throw new TypeError('Unknown storage namespace');
