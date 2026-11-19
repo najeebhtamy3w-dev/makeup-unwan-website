@@ -13,7 +13,7 @@ const db={prepare(sql){return {bind(...params){return {
   }
   return {meta:{changes:1}};
  },
- async all(){return {results:[]}};
+ async all(){return {results:[]}}
 }}}}};
 assert.equal((await insertCommunityEvent(db,{type:'vote',id,owner,choice:0})).inserted,true);
 assert.equal((await insertCommunityEvent(db,{type:'vote',id,owner,choice:1})).inserted,false);
