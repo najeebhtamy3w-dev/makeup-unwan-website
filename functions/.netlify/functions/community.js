@@ -3,6 +3,7 @@
 import {insertCommunityEvent,communityEventCounts} from '../../../cloudflare/lib/community-atomic.mjs';
 import {checkRateLimit} from '../../../cloudflare/lib/atomic-rate-limit.mjs';
 import {createD1Store} from '../../../cloudflare/lib/d1-store.mjs';
+import {requireStagingAdmin} from '../../../cloudflare/lib/admin-auth.mjs';
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMOJI=['❤️','🌸','✨','👏','💡'];
 const KINDS=['تطلعاتي وأمنياتي','أفكار واقتراحات','تجاربي','أسئلة للنقاش','مناسباتي'];
@@ -28,6 +29,16 @@ export async function onRequest({request,env}) {
  const url=new URL(request.url),action=url.searchParams.get('action')||'list';
  const db=env.STAGING_DB;
  try {
+  if(request.method==='GET'&&action==='admin-list') {
+   const denied=await requireStagingAdmin(request,env);if(denied)return denied;
+   const store=createD1Store(db,'community-v1');
+   const ids=(await keys(store,'posts/')).slice(-500),items=[];
+   for(const key of ids){const post=await store.get(key,{type:'json'});if(post)items.push(post);}
+   items.sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+   const reports={};
+   for(const p of items.slice(0,100))reports[p.id]=await communityEventCounts(db,{type:'report',id:p.id});
+   return response(200,{items:items.slice(0,100),reports});
+  }
   if(request.method==='GET'&&action==='list') {
    const store=createD1Store(db,'community-v1');
    const ids=(await keys(store,'posts/')).slice(-400);
@@ -47,7 +58,7 @@ export async function onRequest({request,env}) {
    if(!p)return response(404,{error:'المقارنة غير موجودة'});
    return response(200,{id:p.id,question:p.question,choices:p.choices,createdAt:p.createdAt,counts:await communityEventCounts(db,{type:'vote',id})});
   }
-  if(request.method!=='POST'||!['create','poll-create','react','report','poll-vote'].includes(action))
+  if(request.method!=='POST'||!['create','poll-create','react','report','poll-vote','moderate'].includes(action))
    return response(503,{error:'هذه الوظيفة لم تُفعّل بعد في بيئة الاختبار'});
   if(request.headers.get('origin')!==url.origin)return response(403,{error:'مصدر الطلب غير مسموح'});
   const raw=await request.text();
@@ -57,6 +68,21 @@ export async function onRequest({request,env}) {
   if(!body||typeof body!=='object'||Array.isArray(body))return response(400,{error:'بيانات غير صالحة'});
   if(!['create','poll-create'].includes(action)&&!UUID.test(body.id||''))
    return response(400,{error:'معرف غير صالح'});
+  if(action==='moderate') {
+   const denied=await requireStagingAdmin(request,env);if(denied)return denied;
+   if(!UUID.test(body.id||'')||!['approved','rejected'].includes(body.status))
+    return response(400,{error:'بيانات غير صالحة'});
+   // Conditional SQL UPDATE ensures the post exists and prevents a read/write race.
+   const key='posts/'+body.id;
+   const store=createD1Store(db,'community-v1');
+   const old=await store.get(key,{type:'json'});
+   if(!old)return response(404,{error:'غير موجود'});
+   const updated={...old,status:body.status,reviewedAt:new Date().toISOString()};
+   const result=await db.prepare('UPDATE app_records SET value=?,updated_at=CURRENT_TIMESTAMP WHERE store=? AND key=? AND value=?')
+    .bind(JSON.stringify(updated),'community-v1',key,JSON.stringify(old)).run();
+   if(result.meta?.changes!==1)return response(409,{error:'تم تعديل المنشور من جلسة أخرى. أعد التحميل'});
+   return response(200,{ok:true});
+  }
   const who=await owner(request,env);
   const scope=action==='react'?'community-react':action==='report'?'community-report':action==='create'?'community-create':action==='poll-create'?'poll-create':'poll-vote';
   const limit=action==='react'?25:action==='report'?5:action==='create'?4:action==='poll-create'?6:20;
