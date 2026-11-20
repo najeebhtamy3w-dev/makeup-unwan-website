@@ -37,8 +37,8 @@ assert.equal((await req('moderate',{id,status:'rejected'},'10.0.0.2',true))[0],2
 assert.equal((await req('list'))[1].items.length,0);
 assert.equal((await req('moderate',{id,status:'approved'},'10.0.0.2',true))[0],200);
 assert.equal((await req('list'))[1].items.length,1);
-for(const sample of ['www.example.com','example.xyz','https://example.com','example . com','https:\\/\\/example.com']){
- assert.equal((await req('create',{kind:'أفكار واقتراحات',text:'مشاركة تجريبية تحتوي على رابط '+sample,consent:true},'10.0.0.'+(20+sample.length)))[0],400);
+for(const [index,sample] of ['www.example.com','example.xyz','https://example.com','example . com','https:\\/\\/example.com'].entries()){
+ assert.equal((await req('create',{kind:'أفكار واقتراحات',text:'مشاركة تجريبية تحتوي على رابط '+sample,consent:true},'10.0.0.'+(20+index)))[0],400);
 }
 console.log('PASS community acceptance: moderation, privacy, reports, reactions, cross-client poll voting, input rejection (18 checks)');
 
