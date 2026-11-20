@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {resolveAppDatabase} from '../lib/environment-db.mjs';
+import {onRequestGet} from '../../functions/api/health.js';
+const development={prepare(){return {first:async()=>({ok:1})}}};
+const staging={prepare(){return {first:async()=>({ok:1})}}};
+assert.equal(resolveAppDatabase({DEPLOYMENT_ENV:'development',DEV_DB:development,STAGING_DB:staging}),development);
+assert.equal(resolveAppDatabase({DEPLOYMENT_ENV:'staging',DEV_DB:development,STAGING_DB:staging}),staging);
+assert.equal(resolveAppDatabase({DEPLOYMENT_ENV:'development',STAGING_DB:staging}),null,'never fall back to staging');
+assert.equal(resolveAppDatabase({DEPLOYMENT_ENV:'staging',DEV_DB:development}),null,'never fall back to development');
+assert.equal(resolveAppDatabase({DEPLOYMENT_ENV:'production',DEV_DB:development,STAGING_DB:staging}),null);
+assert.equal((await onRequestGet({env:{DEPLOYMENT_ENV:'development',DEV_DB:development}})).status,200);
+assert.equal((await onRequestGet({env:{DEPLOYMENT_ENV:'development',STAGING_DB:staging}})).status,503);
+console.log('PASS D1 development/staging isolation');

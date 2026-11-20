@@ -28,12 +28,15 @@ jobs:
           node --check functions/.netlify/functions/track-click.js
           node --check functions/.netlify/functions/admin-feedback.js
           node --check functions/.netlify/functions/admin-clicks.js
+          node --check cloudflare/lib/environment-db.mjs
           node --check cloudflare/lib/admin-auth.mjs
           node --check cloudflare/lib/community-atomic.mjs
           node --check cloudflare/lib/atomic-rate-limit.mjs
           node --check cloudflare/lib/d1-store.mjs
       - name: Check Cloudflare CSP parity
         run: node cloudflare/tests/headers-parity.test.mjs
+      - name: Check D1 environment isolation
+        run: node cloudflare/tests/environment-db.test.mjs
       - name: Check staging route guard
         run: node cloudflare/tests/pages-guard.test.mjs
       - name: Check staging community API mock
