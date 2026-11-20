@@ -25,6 +25,15 @@ async function call(fn,password=env.ADMIN_PASSWORD,query=''){
  const res=await fn({request:req,env});return {status:res.status,data:await res.json()};
 }
 assert.equal((await call(inbox,'wrong')).status,401);
+const originalPassword=env.ADMIN_PASSWORD;
+env.ADMIN_PASSWORD='Abc123Def456Ghi'; // exactly 15 characters
+assert.equal(env.ADMIN_PASSWORD.length,15);
+assert.equal((await call(inbox,env.ADMIN_PASSWORD)).status,200);
+assert.equal((await call(stats,env.ADMIN_PASSWORD,'?range=invalid')).status,400);
+assert.equal((await call(inbox,'wrong')).status,401);
+env.ADMIN_PASSWORD='Abc123Def456Gh'; // 14 characters: reject configuration
+assert.equal((await call(inbox,env.ADMIN_PASSWORD)).status,503);
+env.ADMIN_PASSWORD=originalPassword;
 records.set('customer-feedback|msg1',JSON.stringify({id:'msg1',store:'makeup',kind:'اقتراح',message:'أريد مجموعة هدايا جديدة',createdAt:'2026-11-19T00:00:00Z'}));
 const inboxResult=await call(inbox);
 assert.equal(inboxResult.status,200);
