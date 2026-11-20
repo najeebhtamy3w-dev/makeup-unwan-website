@@ -1,3 +1,4 @@
+import {resolveAppDatabase} from '../../../cloudflare/lib/environment-db.mjs';
 // Cloudflare Pages staging-only community API, existing client URL preserved.
 // Staging community API: immediate publishing with rate limits, reporting and admin takedown.
 import {insertCommunityEvent,communityEventCounts} from '../../../cloudflare/lib/community-atomic.mjs';
@@ -24,10 +25,10 @@ async function owner(req,env) {
  return {bucket:ipHash,hash:hex(fingerprint).slice(0,32)};
 }
 export async function onRequest({request,env}) {
- if(env.DEPLOYMENT_ENV!=='staging'||!env.STAGING_DB?.prepare||typeof env.RATE_LIMIT_SALT!=='string'||env.RATE_LIMIT_SALT.length<32)
+ if(!resolveAppDatabase(env)||typeof env.RATE_LIMIT_SALT!=='string'||env.RATE_LIMIT_SALT.length<32)
   return response(503,{error:'الخدمة التجريبية غير مهيأة'});
  const url=new URL(request.url),action=url.searchParams.get('action')||'list';
- const db=env.STAGING_DB;
+ const db=resolveAppDatabase(env);
  try {
   if(request.method==='GET'&&action==='admin-list') {
    const denied=await requireStagingAdmin(request,env);if(denied)return denied;
