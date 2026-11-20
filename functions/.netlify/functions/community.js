@@ -1,7 +1,7 @@
 import {resolveAppDatabase} from '../../../cloudflare/lib/environment-db.mjs';
 // Cloudflare Pages staging-only community API, existing client URL preserved.
 // Staging community API: immediate publishing with rate limits, reporting and admin takedown.
-import {insertCommunityEvent,communityEventCounts} from '../../../cloudflare/lib/community-atomic.mjs';
+import {insertCommunityEvent,communityEventCounts,setCommunityReaction,getCommunityReaction,communityReactionCounts} from '../../../cloudflare/lib/community-atomic.mjs';
 import {checkRateLimit} from '../../../cloudflare/lib/atomic-rate-limit.mjs';
 import {createD1Store} from '../../../cloudflare/lib/d1-store.mjs';
 import {requireStagingAdmin} from '../../../cloudflare/lib/admin-auth.mjs';
@@ -46,9 +46,11 @@ export async function onRequest({request,env}) {
    const approved=[];
    for(const key of ids){const post=await store.get(key,{type:'json'});if(post?.status==='approved')approved.push(post);}
    approved.sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+   const who=await owner(request,env);
    const items=await Promise.all(approved.slice(0,60).map(async p=>({
     id:p.id,kind:p.kind,text:p.text,createdAt:p.createdAt,
-    reactions:await communityEventCounts(db,{type:'reaction',id:p.id})
+    reactions:await communityReactionCounts(db,{id:p.id}),
+    myReaction:await getCommunityReaction(db,{id:p.id,owner:who.hash})
    })));
    return response(200,{items});
   }
@@ -118,9 +120,8 @@ export async function onRequest({request,env}) {
   if(!post||post.status!=='approved')return response(404,{error:'المنشور غير متاح'});
   if(action==='react') {
    if(!EMOJI.includes(body.emoji))return response(400,{error:'تفاعل غير صالح'});
-   const saved=await insertCommunityEvent(db,{type:'reaction',id:body.id,owner:who.hash,emoji:body.emoji});
-   if(!saved.inserted)return response(409,{error:'سبق تسجيل هذا التفاعل'});
-   return response(200,{reactions:await communityEventCounts(db,{type:'reaction',id:body.id})});
+   const saved=await setCommunityReaction(db,{id:body.id,owner:who.hash,emoji:body.emoji});
+   return response(200,{changed:saved.changed,myReaction:await getCommunityReaction(db,{id:body.id,owner:who.hash}),reactions:await communityReactionCounts(db,{id:body.id})});
   }
   const saved=await insertCommunityEvent(db,{type:'report',id:body.id,owner:who.hash});
   return saved.inserted?response(201,{ok:true}):response(409,{error:'تم تسجيل البلاغ سابقًا'});

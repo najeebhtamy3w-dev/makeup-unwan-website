@@ -3,12 +3,14 @@ import { webcrypto } from 'node:crypto';
 import {onRequest} from '../../functions/.netlify/functions/community.js';
 globalThis.crypto ??= webcrypto;
 const records=new Map();
+const selections=new Map();
 const db={prepare(sql){return {bind(...args){return {
  async first(){
   if(sql.startsWith('SELECT value FROM app_records')) {
    const [store,key]=args;const value=records.get(store+'|'+key);
    return value===undefined?null:{value};
   }
+  if(sql.startsWith('SELECT emoji FROM community_reaction_selections')){const [id,owner]=args;const emoji=selections.get(id+'|'+owner);return emoji?{emoji}:null;}
   return null;
  },
  async run(){
@@ -16,6 +18,7 @@ const db={prepare(sql){return {bind(...args){return {
    const [store,key,value]=args;records.set(store+'|'+key,value);
    return {meta:{changes:1}};
   }
+  if(sql.startsWith('INSERT INTO community_reaction_selections')){const [id,owner,emoji]=args,k=id+'|'+owner,changed=selections.get(k)!==emoji;selections.set(k,emoji);return {meta:{changes:changed?1:0}};}
   if(sql.startsWith('INSERT INTO rate_windows'))return {meta:{changes:1}};
   if(sql.startsWith('UPDATE app_records')){const [value,store,key,previous]=args;const k=store+'|'+key;if(records.get(k)!==previous)return {meta:{changes:0}};records.set(k,value);return {meta:{changes:1}};}
   throw Error('Unexpected SQL '+sql);
@@ -26,6 +29,7 @@ const db={prepare(sql){return {bind(...args){return {
    return {results:[...records.keys()].filter(k=>k.startsWith(store+'|')).map(k=>k.slice(store.length+1))
     .filter(k=>k>=lo&&k<hi&&k>cursor).sort().slice(0,250).map(key=>({key}))};
   }
+  if(sql.startsWith('SELECT emoji,COUNT(*) AS count FROM community_reaction_selections')){const [id]=args;const counts=new Map();for(const [key,emoji] of selections)if(key.startsWith(id+'|'))counts.set(emoji,(counts.get(emoji)||0)+1);return {results:[...counts].map(([emoji,count])=>({emoji,count}))};}
   if(sql.startsWith('SELECT discriminator,choice,COUNT(*)'))return {results:[]};
   throw Error('Unexpected SQL '+sql);
  }
@@ -61,6 +65,21 @@ assert.equal(admin.body.items.length,1);
 const postId=admin.body.items[0].id;
 assert.equal((await call('moderate','POST',{id:postId,status:'approved'},'https://staging.example',adminPassword)).status,200);
 assert.equal((await call('list')).body.items.length,1);
+const firstReaction=await call('react','POST',{id:postId,emoji:'❤️'});
+assert.equal(firstReaction.status,200);
+assert.equal(firstReaction.body.changed,true);
+assert.equal(firstReaction.body.reactions['❤️'],1);
+const duplicateReaction=await call('react','POST',{id:postId,emoji:'❤️'});
+assert.equal(duplicateReaction.status,200);
+assert.equal(duplicateReaction.body.changed,false);
+const switchedReaction=await call('react','POST',{id:postId,emoji:'🌸'});
+assert.equal(switchedReaction.status,200);
+assert.equal(switchedReaction.body.changed,true);
+assert.equal(switchedReaction.body.reactions['❤️'],0);
+assert.equal(switchedReaction.body.reactions['🌸'],1);
+const refreshed=(await call('list')).body.items[0];
+assert.equal(refreshed.myReaction,'🌸');
+assert.equal(refreshed.reactions['🌸'],1);
 assert.equal((await call('moderate','POST',{id:postId,status:'invalid'},'https://staging.example',adminPassword)).status,400);
 assert.equal((await call('moderate','POST',{id:poll.body.id,status:'approved'},'https://staging.example',adminPassword)).status,404);
 console.log('PASS Cloudflare community immediate-publish handler mock: create/list/poll/validation/origin/fail-closed');
