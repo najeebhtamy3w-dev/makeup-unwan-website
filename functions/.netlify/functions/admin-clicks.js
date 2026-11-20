@@ -53,6 +53,6 @@ export async function onRequest({request,env}){
   return reply(200,{range,days:count,from:addDays(today,-(count-1)),to:today,total:main.total,
    counts:main.counts,daily:main.daily,summary:{today:pick(aggregate(today)),last7:pick(aggregate(addDays(today,-6))),last30:pick(aggregate(addDays(today,-29)))},
    complete,legacy:{counted:0,truncated:false},generatedAt:new Date().toISOString(),timezone:TZ,
-   storageTime:'UTC',metric:'outbound_clicks',passwordWeak:env.ADMIN_PASSWORD.length<20});
+   storageTime:'UTC',metric:'outbound_clicks',passwordWeak:env.ADMIN_PASSWORD.length<15});
  }catch(e){console.error('CF_ADMIN_CLICKS_ERROR',e?.message);return reply(503,{error:'تعذر قراءة إحصاءات النقرات'});}
 }
