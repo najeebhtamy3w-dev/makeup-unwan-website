@@ -45,6 +45,11 @@ assert.equal(created.status,201);
 assert.equal(created.body.status,'approved');
 assert.equal((await call('list')).body.items.length,1,'New validated posts must publish immediately');
 assert.equal((await call('create','POST',{kind:'أفكار واقتراحات',text:'https://bad.example',consent:true})).status,400);
+for(const bad of ['www.example.com','example.xyz','example . com','https://example.com','https:\u200B//example.com','اتصل بنا 777123456']) {
+ const res=await call('create','POST',{kind:'أفكار واقتراحات',text:'رسالة تجريبية بها رابط أو وسيلة اتصال '+bad,consent:true});
+ assert.equal(res.status,400,'Forbidden input must be rejected: '+bad);
+}
+
 assert.equal((await call('create','POST',{kind:'أفكار واقتراحات',text:'أقترح إضافة ركن جديد للهدايا الموسمية',consent:true},'https://evil.example')).status,403);
 const poll=await call('poll-create','POST',{question:'أي هدية تناسب التخرج؟',choice1:'عطر',choice2:'طقم عناية'});
 assert.equal(poll.status,201);
