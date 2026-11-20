@@ -42,8 +42,8 @@ async function call(action,method='GET',body,origin='https://staging.example',pa
 assert.equal((await call('list')).status,200);
 const created=await call('create','POST',{kind:'أفكار واقتراحات',text:'أقترح إضافة ركن جديد للهدايا الموسمية',consent:true});
 assert.equal(created.status,201);
-assert.equal(created.body.status,'pending');
-assert.equal((await call('list')).body.items.length,0,'Pending posts must remain private');
+assert.equal(created.body.status,'approved');
+assert.equal((await call('list')).body.items.length,1,'Approved posts are published immediately');
 assert.equal((await call('create','POST',{kind:'أفكار واقتراحات',text:'https://bad.example',consent:true})).status,400);
 assert.equal((await call('create','POST',{kind:'أفكار واقتراحات',text:'أقترح إضافة ركن جديد للهدايا الموسمية',consent:true},'https://evil.example')).status,403);
 const poll=await call('poll-create','POST',{question:'أي هدية تناسب التخرج؟',choice1:'عطر',choice2:'طقم عناية'});
@@ -63,4 +63,4 @@ assert.equal((await call('moderate','POST',{id:postId,status:'approved'},'https:
 assert.equal((await call('list')).body.items.length,1);
 assert.equal((await call('moderate','POST',{id:postId,status:'invalid'},'https://staging.example',adminPassword)).status,400);
 assert.equal((await call('moderate','POST',{id:poll.body.id,status:'approved'},'https://staging.example',adminPassword)).status,404);
-console.log('PASS Cloudflare community staging handler mock: create/list/poll/validation/origin/fail-closed');
+console.log('PASS Cloudflare community immediate-publish handler mock: create/list/poll/validation/origin/fail-closed');
