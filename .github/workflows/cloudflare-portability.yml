@@ -36,6 +36,8 @@ jobs:
           node --check cloudflare/lib/community-atomic.mjs
           node --check cloudflare/lib/atomic-rate-limit.mjs
           node --check cloudflare/lib/d1-store.mjs
+      - name: Verify CSP hashes for Cloudflare and Netlify
+        run: node tools/build-config.mjs --check
       - name: Check unified admin UI contract
         run: node cloudflare/tests/admin-ui-contract.test.mjs
       - name: Check Cloudflare CSP parity
