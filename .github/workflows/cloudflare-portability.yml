@@ -1,0 +1,52 @@
+name: Cloudflare portability checks
+on:
+  push:
+    branches:
+      - work/cloudflare-portability-audit
+  pull_request:
+    paths:
+      - 'cloudflare/**'
+      - 'functions/**'
+      - '.github/workflows/cloudflare-portability.yml'
+  workflow_dispatch:
+jobs:
+  portable-staging-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          node --check functions/_middleware.js
+          node --check functions/api/health.js
+          node --check functions/.netlify/functions/community.js
+          node --check functions/.netlify/functions/feedback.js
+          node --check functions/.netlify/functions/track-click.js
+          node --check functions/.netlify/functions/admin-feedback.js
+          node --check functions/.netlify/functions/admin-clicks.js
+          node --check cloudflare/lib/admin-auth.mjs
+          node --check cloudflare/lib/community-atomic.mjs
+          node --check cloudflare/lib/atomic-rate-limit.mjs
+          node --check cloudflare/lib/d1-store.mjs
+      - name: Check Cloudflare CSP parity
+        run: node cloudflare/tests/headers-parity.test.mjs
+      - name: Check staging route guard
+        run: node cloudflare/tests/pages-guard.test.mjs
+      - name: Check staging community API mock
+        run: node cloudflare/tests/community-route.test.mjs
+      - name: Check staging feedback and tracking mock
+        run: node cloudflare/tests/intake-route.test.mjs
+      - name: Check staging admin inbox and click stats mock
+        run: node cloudflare/tests/admin-routes.test.mjs
+      - name: Check atomic API contract mock
+        run: node cloudflare/tests/atomic-contract.test.mjs
+      - name: Install local Cloudflare D1 runtime
+        run: npm install --no-save --package-lock=false miniflare@3
+      - name: Check local Cloudflare D1 integration
+        run: node cloudflare/tests/d1-local-integration.test.mjs
+      - name: Check SQLite schema and concurrent uniqueness
+        run: python3 cloudflare/tests/sqlite-invariants.py

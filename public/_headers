@@ -1,0 +1,37 @@
+# Cloudflare Pages static response headers; CSP hashes mirrored from generated netlify.toml.
+
+/
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-Oa68vaYpOBMPZEwbFJTDITUhIxWiZ/u/YvnzLbtBIso=' 'sha256-5G1Phs45qxdA/30uIMjfYY1TFKTlCrzKtsLMLdvO/mY='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'
+
+/index.html
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-Oa68vaYpOBMPZEwbFJTDITUhIxWiZ/u/YvnzLbtBIso=' 'sha256-5G1Phs45qxdA/30uIMjfYY1TFKTlCrzKtsLMLdvO/mY='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'
+
+/admin
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-iXeQ540Vm9dhgKFLtJHWLrrz7WCRtUpdx53Mtb2xEOg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'
+
+/admin.html
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-iXeQ540Vm9dhgKFLtJHWLrrz7WCRtUpdx53Mtb2xEOg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'
