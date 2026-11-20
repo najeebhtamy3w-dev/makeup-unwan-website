@@ -8,6 +8,7 @@ on:
       - 'cloudflare/**'
       - 'functions/**'
       - 'public/masahatak.js'
+      - 'public/admin.html'
       - '.github/workflows/cloudflare-portability.yml'
   workflow_dispatch:
 jobs:
@@ -35,6 +36,8 @@ jobs:
           node --check cloudflare/lib/community-atomic.mjs
           node --check cloudflare/lib/atomic-rate-limit.mjs
           node --check cloudflare/lib/d1-store.mjs
+      - name: Check unified admin UI contract
+        run: node cloudflare/tests/admin-ui-contract.test.mjs
       - name: Check Cloudflare CSP parity
         run: node cloudflare/tests/headers-parity.test.mjs
       - name: Check D1 environment isolation
