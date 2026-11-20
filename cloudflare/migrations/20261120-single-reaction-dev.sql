@@ -1,7 +1,7 @@
-// D1 schema extension: one current emoji per anonymous fingerprint and post.
-// Run ONLY on makeup-unwan-dev-test after reviewing a backup. Do not run on staging or production.
-// Legacy rows are copied once; when an identity has several emoji rows, the
-// latest row (created_at, rowid) wins. Legacy events are retained untouched.
+-- D1 schema extension: one current emoji per anonymous fingerprint and post.
+-- Run ONLY on makeup-unwan-dev-test after reviewing a backup. Do not run on staging or production.
+-- Legacy rows are copied once; when an identity has several emoji rows, the
+-- latest row (created_at, rowid) wins. Legacy events are retained untouched.
 CREATE TABLE IF NOT EXISTS community_reaction_selections (
  target_id TEXT NOT NULL,
  owner_hash TEXT NOT NULL,
