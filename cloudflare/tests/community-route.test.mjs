@@ -4,6 +4,7 @@ import {onRequest} from '../../functions/.netlify/functions/community.js';
 globalThis.crypto ??= webcrypto;
 const records=new Map();
 const selections=new Map();
+const events=new Map();
 const db={prepare(sql){return {bind(...args){return {
  async first(){
   if(sql.startsWith('SELECT value FROM app_records')) {
@@ -19,6 +20,7 @@ const db={prepare(sql){return {bind(...args){return {
    return {meta:{changes:1}};
   }
   if(sql.startsWith('INSERT INTO community_reaction_selections')){const [id,owner,emoji]=args,k=id+'|'+owner,changed=selections.get(k)!==emoji;selections.set(k,emoji);return {meta:{changes:changed?1:0}};}
+  if(sql.startsWith('INSERT OR IGNORE INTO community_events')){const [kind,id,owner,discriminator,choice]=args;const k=[kind,id,owner,discriminator].join('|');if(events.has(k))return {meta:{changes:0}};events.set(k,{kind,id,owner,discriminator,choice});return {meta:{changes:1}};}
   if(sql.startsWith('INSERT INTO rate_windows'))return {meta:{changes:1}};
   if(sql.startsWith('UPDATE app_records')){const [value,store,key,previous]=args;const k=store+'|'+key;if(records.get(k)!==previous)return {meta:{changes:0}};records.set(k,value);return {meta:{changes:1}};}
   throw Error('Unexpected SQL '+sql);
@@ -30,7 +32,7 @@ const db={prepare(sql){return {bind(...args){return {
     .filter(k=>k>=lo&&k<hi&&k>cursor).sort().slice(0,250).map(key=>({key}))};
   }
   if(sql.startsWith('SELECT emoji,COUNT(*) AS count FROM community_reaction_selections')){const [id]=args;const counts=new Map();for(const [key,emoji] of selections)if(key.startsWith(id+'|'))counts.set(emoji,(counts.get(emoji)||0)+1);return {results:[...counts].map(([emoji,count])=>({emoji,count}))};}
-  if(sql.startsWith('SELECT discriminator,choice,COUNT(*)'))return {results:[]};
+  if(sql.startsWith('SELECT discriminator,choice,COUNT(*)')){const [kind,id]=args;const counts=new Map();for(const e of events.values())if(e.kind===kind&&e.id===id){const k=e.discriminator+'|'+e.choice;const x=counts.get(k)||{discriminator:e.discriminator,choice:e.choice,count:0};x.count++;counts.set(k,x);}return {results:[...counts.values()]};}
   throw Error('Unexpected SQL '+sql);
  }
 }}}}};
@@ -80,6 +82,24 @@ assert.equal(switchedReaction.body.reactions['🌸'],1);
 const refreshed=(await call('list')).body.items[0];
 assert.equal(refreshed.myReaction,'🌸');
 assert.equal(refreshed.reactions['🌸'],1);
+// Reporting: first accepted, second rejected; admin sees exactly one report.
+assert.equal((await call('report','POST',{id:postId})).status,201);
+assert.equal((await call('report','POST',{id:postId})).status,409);
+const reported=await call('admin-list','GET',undefined,'https://staging.example',adminPassword);
+assert.equal(reported.status,200);
+assert.equal(reported.body.reports[postId],1);
+assert.equal((await call('admin-list','GET',undefined,'https://staging.example','wrong-password')).status,401);
+// Moderation: hide removes public listing and blocks new reports; restore makes it visible.
+assert.equal((await call('moderate','POST',{id:postId,status:'rejected'},'https://staging.example',adminPassword)).status,200);
+assert.equal((await call('list')).body.items.length,0);
+assert.equal((await call('report','POST',{id:postId})).status,404);
+assert.equal((await call('moderate','POST',{id:postId,status:'approved'},'https://staging.example',adminPassword)).status,200);
+assert.equal((await call('list')).body.items.length,1);
+// Poll: one vote per fingerprint and poll, count persists on GET.
+assert.equal((await call('poll-vote','POST',{id:poll.body.id,choice:0})).status,200);
+assert.equal((await call('poll-vote','POST',{id:poll.body.id,choice:1})).status,409);
+assert.deepEqual((await call('poll&id='+poll.body.id)).body.counts,[1,0]);
+assert.equal((await call('poll-vote','POST',{id:poll.body.id,choice:2})).status,400);
 assert.equal((await call('moderate','POST',{id:postId,status:'invalid'},'https://staging.example',adminPassword)).status,400);
 assert.equal((await call('moderate','POST',{id:poll.body.id,status:'approved'},'https://staging.example',adminPassword)).status,404);
 console.log('PASS Cloudflare community immediate-publish handler mock: create/list/poll/validation/origin/fail-closed');
