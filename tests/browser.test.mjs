@@ -187,10 +187,33 @@ async function adminPage(opts = {}) { const ctx = await br.newContext(opts.ctx |
   const c = await br.newContext({ viewport: { width: 360, height: 740 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 }); const ip = await c.newPage(); await wire(ip); await ip.goto(base + '/index.html'); await ip.waitForTimeout(400);
   await T('AT14b', 'public site at 360px: no horizontal overflow, no page errors', async () => { const o = await ip.evaluate(() => document.documentElement.scrollWidth - innerWidth); const w = await ip.evaluate(overflowProbe); ok(o <= 0 && !w, 'overflow ' + o + ' ' + w); await ip.screenshot({ path: path.join(OUT, 'index-360.png') }); return 'overflow=' + o; }, 'browser'); await c.close();
 }
+await T('AT-DISCOVER', 'Discover cards are interactive; edits persist locally and clear without backend requests', async () => {
+  const ctx = await br.newContext(); const page = await ctx.newPage(); const errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(base+'/masahatak.html');
+  await page.click('[data-tab="discover"]');
+  eq(await page.locator('[data-discover]').count(),4,'four selectable templates');
+  await page.click('[data-discover="gift"]');
+  eq(await page.locator('[data-discover="gift"]').getAttribute('aria-pressed'),'true');
+  await page.fill('#discover-gift-occasion','تخرج');
+  await page.click('#discover-save');
+  eq(await page.locator('#discover-status').textContent(),'تم حفظ القالب على هذا الجهاز.');
+  await page.reload(); await page.click('[data-tab="discover"]'); await page.click('[data-discover="gift"]');
+  eq(await page.locator('#discover-gift-occasion').inputValue(),'تخرج','saved value restored');
+  await page.click('[data-discover="beauty"]');
+  eq(await page.locator('#discover-beauty-occasion').inputValue(),'','templates isolated');
+  await page.click('[data-discover="gift"]'); await page.click('#discover-clear');
+  eq(await page.locator('#discover-gift-occasion').inputValue(),'');
+  await page.reload(); await page.click('[data-tab="discover"]'); await page.click('[data-discover="gift"]');
+  eq(await page.locator('#discover-gift-occasion').inputValue(),'','cleared value not restored');
+  eq(errors.length,0,'no JavaScript page errors');
+  await ctx.close();return '4 templates; save/reload/clear; no page errors';
+},'browser');
+
 /* layout / publish */
 await T('AT13', 'public/ contains only approved V1.2 pages and V1.3.1 community assets; source, package.json, docs, tests are NOT published', async () => {
   const files = fs.readdirSync(PUB).sort();
-  eq(files.join(), ['admin.html', 'community-admin.html', 'index.html', 'masahatak.html', 'masahatak.js'].join(','), 'exact approved publish allowlist');
+  eq(files.join(), ['admin.html', 'community-admin.html', 'discover.js', 'index.html', 'masahatak.html', 'masahatak.js'].join(','), 'exact approved publish allowlist');
   for (const p of ['/netlify/functions/track-click.mjs', '/netlify/lib/common.mjs', '/package.json', '/netlify.toml', '/docs/archive/README-AR.txt', '/tests/backend.test.mjs']) { const r = await fetch(base + p); eq(r.status, 404, p); }
   eq(toml.build.publish, 'public'); eq(toml.build.functions, 'netlify/functions'); ok(toml.redirects.length >= 6); return 'published=' + files.join('+') + '; 6 probe paths -> 404 (local server of public/ only; Netlify itself NOT TESTED)'; }, 'static');
 await T('AT13b', 'netlify.toml is in sync with the inline scripts (CSP hashes)', async () => { execFileSync('node', [path.join(ROOT, 'tools/build-config.mjs'), '--check']); return 'in sync'; }, 'static');
