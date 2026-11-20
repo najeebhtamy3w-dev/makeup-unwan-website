@@ -1,5 +1,5 @@
 // Cloudflare Pages staging-only community API, existing client URL preserved.
-// Only polls and approved-post reactions/reports are enabled; all other actions fail closed.
+// Staging community API: immediate publishing with rate limits, reporting and admin takedown.
 import {insertCommunityEvent,communityEventCounts} from '../../../cloudflare/lib/community-atomic.mjs';
 import {checkRateLimit} from '../../../cloudflare/lib/atomic-rate-limit.mjs';
 import {createD1Store} from '../../../cloudflare/lib/d1-store.mjs';
@@ -93,8 +93,8 @@ export async function onRequest({request,env}) {
    if(!KINDS.includes(body.kind)||text.length<15||text.length>420||rejectLinks(text)||/[<>]/.test(text)||body.consent!==true)
     return response(400,{error:'تأكد من النوع والنص والموافقة، ولا تضع روابط أو أرقام أو رموز HTML.'});
    const id=crypto.randomUUID();
-   await createD1Store(db,'community-v1').setJSON('posts/'+id,{id,kind:body.kind,text,status:'pending',createdAt:new Date().toISOString()});
-   return response(201,{reference:id.slice(0,8),status:'pending'});
+   await createD1Store(db,'community-v1').setJSON('posts/'+id,{id,kind:body.kind,text,status:'approved',createdAt:new Date().toISOString()});
+   return response(201,{reference:id.slice(0,8),status:'approved',id});
   }
   if(action==='poll-create') {
    const question=clean(body.question),choice1=clean(body.choice1),choice2=clean(body.choice2);
