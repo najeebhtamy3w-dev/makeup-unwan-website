@@ -7,6 +7,7 @@ on:
     paths:
       - 'cloudflare/**'
       - 'functions/**'
+      - 'public/masahatak.js'
       - '.github/workflows/cloudflare-portability.yml'
   workflow_dispatch:
 jobs:
@@ -21,6 +22,7 @@ jobs:
           node-version: '22'
       - name: Check JavaScript syntax
         run: |
+          node --check public/masahatak.js
           node --check functions/_middleware.js
           node --check functions/api/health.js
           node --check functions/.netlify/functions/community.js
@@ -51,5 +53,7 @@ jobs:
         run: npm install --no-save --package-lock=false miniflare@3
       - name: Check local Cloudflare D1 integration
         run: node cloudflare/tests/d1-local-integration.test.mjs
+      - name: Check reaction migration and selection invariant
+        run: python3 cloudflare/tests/reaction-migration.py
       - name: Check SQLite schema and concurrent uniqueness
         run: python3 cloudflare/tests/sqlite-invariants.py
