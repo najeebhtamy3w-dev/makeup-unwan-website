@@ -1,13 +1,14 @@
+import {resolveAppDatabase} from '../../../cloudflare/lib/environment-db.mjs';
 // Cloudflare staging admin feedback inbox, read-only and fail-closed.
 import {requireStagingAdmin} from '../../../cloudflare/lib/admin-auth.mjs';
 import {createD1Store} from '../../../cloudflare/lib/d1-store.mjs';
 const reply=(status,body)=>Response.json(body,{status,headers:{'cache-control':'no-store','x-content-type-options':'nosniff'}});
 export async function onRequest({request,env}){
- if(env.DEPLOYMENT_ENV!=='staging'||!env.STAGING_DB?.prepare||typeof env.RATE_LIMIT_SALT!=='string'||env.RATE_LIMIT_SALT.length<32)return reply(503,{error:'لوحة الإدارة غير مهيأة'});
+ if(!resolveAppDatabase(env)||typeof env.RATE_LIMIT_SALT!=='string'||env.RATE_LIMIT_SALT.length<32)return reply(503,{error:'لوحة الإدارة غير مهيأة'});
  if(request.method!=='GET')return reply(405,{error:'Method not allowed'});
  try{
   const denied=await requireStagingAdmin(request,env);if(denied)return denied;
-  const store=createD1Store(env.STAGING_DB,'customer-feedback');
+  const store=createD1Store(resolveAppDatabase(env),'customer-feedback');
   const started=Date.now(),budget=8000,all=[];
   let complete=true,skipped=0;
   for await(const page of store.list({paginate:true})){
