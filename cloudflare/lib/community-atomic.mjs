@@ -31,3 +31,29 @@ export async function communityEventCounts(db,{type,id}) {
   for (const r of rows.results || []) if (Object.hasOwn(counts,r.discriminator)) counts[r.discriminator] += Number(r.count);
   return counts;
 }
+
+/**
+ * Atomic single-selection upsert: same emoji is a no-op; a different emoji
+ * replaces the prior choice without increasing the total reaction count.
+ * Requires the additive community_reaction_selections D1 migration.
+ */
+export async function setCommunityReaction(db,{id,owner,emoji}) {
+ if(!db?.prepare||!idPattern.test(id)||!fingerprintPattern.test(owner)||!['❤️','🌸','✨','👏','💡'].includes(emoji))
+  throw new TypeError('Invalid reaction');
+ const result=await db.prepare(
+  'INSERT INTO community_reaction_selections (target_id,owner_hash,emoji) VALUES (?,?,?) ON CONFLICT(target_id,owner_hash) DO UPDATE SET emoji=excluded.emoji,updated_at=CURRENT_TIMESTAMP WHERE emoji<>excluded.emoji'
+ ).bind(id,owner,emoji).run();
+ return {changed:result.meta?.changes===1};
+}
+export async function getCommunityReaction(db,{id,owner}) {
+ if(!db?.prepare||!idPattern.test(id)||!fingerprintPattern.test(owner))throw new TypeError('Invalid reaction lookup');
+ const row=await db.prepare('SELECT emoji FROM community_reaction_selections WHERE target_id=? AND owner_hash=?').bind(id,owner).first();
+ return row?.emoji||null;
+}
+export async function communityReactionCounts(db,{id}) {
+ if(!db?.prepare||!idPattern.test(id))throw new TypeError('Invalid reaction count');
+ const rows=await db.prepare('SELECT emoji,COUNT(*) AS count FROM community_reaction_selections WHERE target_id=? GROUP BY emoji').bind(id).all();
+ const counts=Object.fromEntries(['❤️','🌸','✨','👏','💡'].map(e=>[e,0]));
+ for(const row of rows.results||[])if(Object.hasOwn(counts,row.emoji))counts[row.emoji]=Number(row.count);
+ return counts;
+}
