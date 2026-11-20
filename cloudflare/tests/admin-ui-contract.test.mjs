@@ -7,6 +7,8 @@ globalThis.crypto??=webcrypto;
 const html=readFileSync(new URL('../../public/admin.html',import.meta.url),'utf8');
 for(const marker of ['data-page="community"','id="community"','id="communityItems"','id="communityRefresh"','function loadCommunity()','communityRequest(\'admin-list\')','communityRequest(\'moderate\'','headers:{\'x-admin-password\':adminPassword}'])
  assert.ok(html.includes(marker),'Missing unified admin feature: '+marker);
+assert.ok(html.includes('كلمة مرور واحدة لجميع أقسام الإدارة'),'Login should explain single-password behavior');
+assert.ok(!html.includes('استخدم كلمة مرور الإدارة المضبوطة في Netlify'),'Obsolete hosting instruction must not appear');
 assert.ok(!html.includes('iframe src="/community-admin.html"'),'Must not embed second login page');
 const records=new Map();
 const db={prepare(sql){return{bind(...args){return{
