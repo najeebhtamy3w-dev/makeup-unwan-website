@@ -8,7 +8,12 @@ const polls=()=>strongStore('community-polls-v1');
 const rejectLinks=s=>/(?:https?:\/\/|www\.|(?:[a-z0-9-]+\.)+(?:com|net|org|io|app|ly|me|co|ye)\b|(?:\+?\d[\d\s-]{7,}\d)|@)/iu.test(s);
 const clean=s=>typeof s==='string'?s.trim():'';
 // Normalize invisible separators before screening URL and contact obfuscation.
-const forbidden=s=>{const n=s.normalize('NFKC').replace(/[\\u200B-\\u200D\\u2060\\uFEFF]/g,'').replace(/[\\u064B-\\u065F]/g,'');return rejectLinks(n)||/(?:\\b[a-z0-9-]+\\s*\\.\\s*[a-z]{2,}\\b|\\b(?:t\\s*\\.\\s*me|wa\\s*\\.\\s*me)\\b)/iu.test(n)};
+const forbidden=s=>{
+ const n=s.normalize('NFKC').replace(/[\u200B-\u200F\u202A-\u202E\u2060\u2066-\u2069\uFEFF\u064B-\u065F]/g,'');
+ return rejectLinks(n)||rejectLinks(n.replace(/\s+/g,''))||
+ /(?:[a-z0-9-]+\s*\.\s*)+[a-z]{2,}(?:\b|\/)/iu.test(n)||
+ /(?:\+?\d[\d\s().-]{7,}\d)/u.test(n);
+};
 const uuid=s=>typeof s==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 const token=s=>typeof s==='string'&&/^[0-9a-f]{32}$/i.test(s);
 const ownerHash=(req,ctx)=>createHash('sha256').update(ipKey(clientIp(req,ctx))+'|'+(req.headers.get('user-agent')||'').slice(0,200)).digest('hex').slice(0,32);
