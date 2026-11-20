@@ -7,6 +7,13 @@ const events=()=>strongStore('community-events-v2');
 const polls=()=>strongStore('community-polls-v1');
 const rejectLinks=s=>/(?:https?:\/\/|www\.|(?:[a-z0-9-]+\.)+(?:com|net|org|io|app|ly|me|co|ye)\b|(?:\+?\d[\d\s-]{7,}\d)|@)/iu.test(s);
 const clean=s=>typeof s==='string'?s.trim():'';
+// Normalize invisible separators before screening URL and contact obfuscation.
+const forbidden=s=>{
+ const n=s.normalize('NFKC').replace(/[\u200B-\u200F\u202A-\u202E\u2060\u2066-\u2069\uFEFF\u064B-\u065F]/g,'');
+ return rejectLinks(n)||rejectLinks(n.replace(/\s+/g,''))||
+ /(?:[a-z0-9-]+\s*\.\s*)+[a-z]{2,}(?:\b|\/)/iu.test(n)||
+ /(?:\+?\d[\d\s().-]{7,}\d)/u.test(n);
+};
 const uuid=s=>typeof s==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 const token=s=>typeof s==='string'&&/^[0-9a-f]{32}$/i.test(s);
 const ownerHash=(req,ctx)=>createHash('sha256').update(ipKey(clientIp(req,ctx))+'|'+(req.headers.get('user-agent')||'').slice(0,200)).digest('hex').slice(0,32);
@@ -41,9 +48,9 @@ export default async function handler(request,context){
  if(action==='create'){
   const blocked=await limited(request,context,'community-create',4);if(blocked)return blocked;
   const b=await read(request),t=clean(b.text);
-  if(!kinds.includes(b.kind)||t.length<15||t.length>420||rejectLinks(t)||/[<>]/.test(t)||b.consent!==true)return json(400,{error:'تأكد من النوع والنص والموافقة، ولا تضع روابط أو أرقام أو رموز HTML.'});
-  const id=randomUUID(),x={id,kind:b.kind,text:t,status:'pending',createdAt:new Date().toISOString()};
-  await posts().setJSON('posts/'+id,x);return json(201,{reference:id.slice(0,8),status:'pending'});
+  if(!kinds.includes(b.kind)||t.length<15||t.length>420||forbidden(t)||/[<>]/.test(t)||b.consent!==true)return json(400,{error:'تأكد من النوع والنص والموافقة، ولا تضع روابط أو أرقام أو رموز HTML.'});
+  const id=randomUUID(),x={id,kind:b.kind,text:t,status:'approved',createdAt:new Date().toISOString()};
+  await posts().setJSON('posts/'+id,x);return json(201,{reference:id.slice(0,8),status:'approved'});
  }
  if(action==='moderate'){
   const denied=await requireAdmin(request,context);if(denied)return denied;
@@ -70,7 +77,7 @@ export default async function handler(request,context){
  if(action==='poll-create'){
   const blocked=await limited(request,context,'poll-create',6);if(blocked)return blocked;
   const b=await read(request),q=clean(b.question),a=clean(b.choice1),c=clean(b.choice2);
-  if(q.length<5||q.length>130||a.length<2||a.length>80||c.length<2||c.length>80||[q,a,c].some(t=>rejectLinks(t)||/[<>]/.test(t)))return json(400,{error:'أدخل سؤالًا واختيارين دون روابط أو بيانات اتصال'});
+  if(q.length<5||q.length>130||a.length<2||a.length>80||c.length<2||c.length>80||[q,a,c].some(t=>forbidden(t)||/[<>]/.test(t)))return json(400,{error:'أدخل سؤالًا واختيارين دون روابط أو بيانات اتصال'});
   const id=randomUUID();await polls().setJSON('polls/'+id,{id,question:q,choices:[a,c],createdAt:new Date().toISOString()});return json(201,{id,path:'/masahatak.html?poll='+id});
  }
  if(action==='poll-vote'){

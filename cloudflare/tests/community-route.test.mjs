@@ -42,9 +42,14 @@ async function call(action,method='GET',body,origin='https://staging.example',pa
 assert.equal((await call('list')).status,200);
 const created=await call('create','POST',{kind:'أفكار واقتراحات',text:'أقترح إضافة ركن جديد للهدايا الموسمية',consent:true});
 assert.equal(created.status,201);
-assert.equal(created.body.status,'pending');
-assert.equal((await call('list')).body.items.length,0,'Pending posts must remain private');
+assert.equal(created.body.status,'approved');
+assert.equal((await call('list')).body.items.length,1,'New validated posts must publish immediately');
 assert.equal((await call('create','POST',{kind:'أفكار واقتراحات',text:'https://bad.example',consent:true})).status,400);
+for(const bad of ['www.example.com','example.xyz','example . com','https://example.com','https:\u200B//example.com','اتصل بنا 777123456']) {
+ const res=await call('create','POST',{kind:'أفكار واقتراحات',text:'رسالة تجريبية بها رابط أو وسيلة اتصال '+bad,consent:true});
+ assert.equal(res.status,400,'Forbidden input must be rejected: '+bad);
+}
+
 assert.equal((await call('create','POST',{kind:'أفكار واقتراحات',text:'أقترح إضافة ركن جديد للهدايا الموسمية',consent:true},'https://evil.example')).status,403);
 const poll=await call('poll-create','POST',{question:'أي هدية تناسب التخرج؟',choice1:'عطر',choice2:'طقم عناية'});
 assert.equal(poll.status,201);
@@ -61,6 +66,10 @@ assert.equal(admin.body.items.length,1);
 const postId=admin.body.items[0].id;
 assert.equal((await call('moderate','POST',{id:postId,status:'approved'},'https://staging.example',adminPassword)).status,200);
 assert.equal((await call('list')).body.items.length,1);
+assert.equal((await call('moderate','POST',{id:postId,status:'rejected'},'https://staging.example',adminPassword)).status,200);
+assert.equal((await call('list')).body.items.length,0,'Hidden posts must be excluded from public list');
+assert.equal((await call('moderate','POST',{id:postId,status:'approved'},'https://staging.example',adminPassword)).status,200);
+assert.equal((await call('list')).body.items.length,1);
 assert.equal((await call('moderate','POST',{id:postId,status:'invalid'},'https://staging.example',adminPassword)).status,400);
 assert.equal((await call('moderate','POST',{id:poll.body.id,status:'approved'},'https://staging.example',adminPassword)).status,404);
-console.log('PASS Cloudflare community staging handler mock: create/list/poll/validation/origin/fail-closed');
+console.log('PASS Cloudflare community staging handler mock: immediate publishing/hide/restore/poll/validation/origin');

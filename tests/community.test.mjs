@@ -12,7 +12,8 @@ const req=async(action,body,ip='10.0.0.1',admin=false)=>{
 reset();
 let [code,result]=await req('create',{kind:'أفكار واقتراحات',text:'أقترح تنظيم ركن للهدايا المتنوعة للمناسبات',consent:true});assert.equal(code,201);
 let id=[...db.get('community-v1').keys()][0].split('/')[1];
-assert.equal((await req('list'))[1].items.length,0);
+assert.equal((await req('list'))[1].items.length,1);
+assert.equal(result.status,'approved');
 assert.equal((await req('moderate',{id,status:'approved'}))[0],401);
 assert.equal((await req('moderate',{id,status:'approved'},'10.0.0.2',true))[0],200);
 assert.equal((await req('list'))[1].items.length,1);
@@ -31,6 +32,14 @@ assert.equal((await req('poll-vote',{id:pollId,choice:0},'10.0.0.6'))[0],200);
 assert.equal((await req('poll-vote',{id:pollId,choice:1},'10.0.0.6'))[0],409);
 assert.equal((await req('poll-vote',{id:pollId,choice:1},'10.0.0.7'))[0],200);
 assert.deepEqual((await req('poll&id='+pollId))[1].counts,[1,1]);
+// Published content can be hidden by the authenticated administrator and restored.
+assert.equal((await req('moderate',{id,status:'rejected'},'10.0.0.2',true))[0],200);
+assert.equal((await req('list'))[1].items.length,0);
+assert.equal((await req('moderate',{id,status:'approved'},'10.0.0.2',true))[0],200);
+assert.equal((await req('list'))[1].items.length,1);
+for(const [index,sample] of ['www.example.com','example.xyz','https://example.com','example . com'].entries()){
+ assert.equal((await req('create',{kind:'أفكار واقتراحات',text:'مشاركة تجريبية تحتوي على رابط '+sample,consent:true},'10.0.0.'+(20+index)))[0],400);
+}
 console.log('PASS community acceptance: moderation, privacy, reports, reactions, cross-client poll voting, input rejection (18 checks)');
 
 // Regression: shared poll URL must forward its ID as a query parameter to the API.
