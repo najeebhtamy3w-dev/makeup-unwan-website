@@ -11,12 +11,3 @@
 7. Verify messages, contact destinations, CSP, blocked source URLs, and daily click counts in real Netlify.
 
 Existing docs/DEPLOYMENT-GUIDE-V1.2.1.md and ROLLBACK-GUIDE-V1.2.1.md remain applicable with this readiness note taking precedence.
-
-## Safety repair — 2026-11-18
-
-- Cleanup is restricted internally to rate-guard and known marker scopes.
-- Expiry: click 1 minute; feedback/client 10 minutes; failed login 15 minutes; feedback/global 24 hours.
-- Active, future-dated, malformed and unknown-scope markers are preserved.
-- Existing release callbacks still cancel only their own non-chargeable attempt (successful authentication or a rejected request); expiry cleanup cannot cancel active chargeable attempts.
-- Regression coverage checks expiry boundaries, business-store isolation, daily-cap preservation, and login-lockout preservation.
-- Production deployment remains HOLD: full browser suite and authenticated Netlify deploy/rollback checks are not verified. No main commit was made.

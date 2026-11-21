@@ -1,7 +1,7 @@
 {
   "name": "makeup-unwan-site",
   "private": true,
-  "version": "1.2.2",
+  "version": "1.3.1-rc.1",
   "type": "module",
   "scripts": {
     "build:config": "node tools/build-config.mjs",
@@ -10,7 +10,8 @@
     "test:backend": "node --import ./tests/stub/register.mjs tests/backend.test.mjs",
     "test:browser": "node --import ./tests/stub/register.mjs tests/browser.test.mjs",
     "test:smoke-local": "node --import ./tests/stub/register.mjs tests/smoke-selftest.mjs",
-    "install:browsers": "playwright install chromium"
+    "install:browsers": "playwright install chromium",
+    "test:community": "node --import ./tests/stub/register.mjs tests/community.test.mjs"
   },
   "dependencies": {
     "@netlify/blobs": "10.7.8"

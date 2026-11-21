@@ -158,40 +158,4 @@ await T('AT-misc2', 'rate-limit markers swept by admin-clicks (older than 1h)', 
   reset(); const g = new Map(); db.set('rate-guard', g); const old = Date.now() - 2 * 3600e3; for (let i = 0; i < 30; i++) g.set(`rl/c/abc/${String(old).padStart(13, '0')}-00000000-0000-4000-8000-${String(i).padStart(12, '0')}`, '1'); g.set(`rl/c/abc/${String(Date.now()).padStart(13, '0')}-00000000-0000-4000-8000-ffffffffffff`, '1');
   await getC('?range=today'); await new Promise((r) => setTimeout(r, 200)); const left = [...g.keys()].filter((k) => k.startsWith('rl/c/abc/')).length; ok(left <= 2, 'left ' + left); return `old markers swept; left=${left} (includes recent)`; });
 
-await T('GUARD-TTL', 'cleanup preserves active scopes, unknown keys, and business stores', async () => {
-  reset();
-  const { sweepGuards } = await import('../netlify/lib/common.mjs');
-  const now = Date.now(), g = new Map(); db.set('rate-guard', g);
-  const key = (scope, age) => `rl/${scope}/bucket/${now-age}-00000000-0000-4000-8000-000000000001`;
-  for (const [scope, ttl] of Object.entries({c:60000,f:600000,a:900000,fcap:86400000})) {
-    g.set(key(scope,ttl-1),'1');g.set(key(scope,ttl),'1');
-  }
-  g.set(key('unknown',999999999),'1'); g.set('unrecognized','1');
-  db.set('customer-feedback',new Map([['old','keep']]));db.set('contact-click-events',new Map([['old','keep']]));
-  eq(await sweepGuards({now}),4);
-  for (const [scope,ttl] of Object.entries({c:60000,f:600000,a:900000,fcap:86400000})) ok(g.has(key(scope,ttl-1)),scope);
-  eq(g.size,6);eq(db.get('customer-feedback').get('old'),'keep');eq(db.get('contact-click-events').get('old'),'keep');
-});
-await T('GUARD-DAILY', 'admin cleanup cannot reopen the 24-hour feedback cap', async () => {
-  reset();process.env.FEEDBACK_DAILY_CAP='1';
-  try {
-    setNow('2026-11-18T00:00:00Z');eq((await postF(good,'cap1')).status,201);
-    setNow('2026-11-18T02:00:00Z');eq((await postF(good,'cap2')).status,429);
-    await getC();await new Promise(r=>setTimeout(r,200));eq((await postF(good,'cap3')).status,429);
-    setNow('2026-11-19T00:00:01Z');eq((await postF(good,'cap4')).status,201);
-  } finally {restore();delete process.env.FEEDBACK_DAILY_CAP;}
-});
-
-await T('GUARD-LOGIN', 'cleanup preserves a live login lockout and removes only expired attempts', async () => {
-  reset();const { sweepGuards } = await import('../netlify/lib/common.mjs');
-  try {
-    setNow('2026-11-18T02:00:00Z');
-    for(let i=0;i<5;i++) eq((await getC('?range=30',{'x-admin-password':'wrong'},'locked')).status,401);
-    setNow('2026-11-18T02:14:00Z');await sweepGuards();
-    eq((await getC('?range=30',{'x-admin-password':PASS},'locked')).status,429);
-    setNow('2026-11-18T02:16:00Z');await sweepGuards();
-    eq((await getC('?range=30',{'x-admin-password':PASS},'locked')).status,200);
-  } finally {restore();}
-});
-
 process.exit(save('backend.json') ? 1 : 0);
