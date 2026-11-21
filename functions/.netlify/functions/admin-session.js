@@ -8,6 +8,6 @@ export async function onRequest({request,env}){
   return reply(200,{ok:true,role:'admin'});
  }catch(e){
   console.error('CF_ADMIN_SESSION_ERROR',e?.message);
-  return reply(503,{error:'تعذر التحقق من الدخول حاليًا'});
+  return reply(503,{error:'تعذر التحقق من الدخول حاليًا (خطأ في الخادم أو قاعدة البيانات)',code:'ADMIN_CHECK_FAILED'});
  }
 }
