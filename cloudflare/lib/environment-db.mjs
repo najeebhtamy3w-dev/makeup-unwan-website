@@ -19,7 +19,11 @@ export function resolveAppDatabase(env) {
 // reports only WHETHER each expected binding exists. Never returns values, IDs or data.
 export function diagnoseAppDatabase(env){
   const mode=deploymentEnv(env);
-  const present={DEPLOYMENT_ENV:mode!=='',DEV_DB:env?.DEV_DB!==undefined,STAGING_DB:env?.STAGING_DB!==undefined};
+  const has=k=>env?.[k]!==undefined&&env?.[k]!==null&&env?.[k]!=='';
+  // ASSETS is injected by Cloudflare into EVERY Pages Function: if it is present while the
+  // others are absent, context.env reaches the code and the deployment simply has no settings.
+  const present={ASSETS:has('ASSETS'),DEPLOYMENT_ENV:mode!=='',DEV_DB:has('DEV_DB'),STAGING_DB:has('STAGING_DB'),
+   ADMIN_PASSWORD:has('ADMIN_PASSWORD'),RATE_LIMIT_SALT:has('RATE_LIMIT_SALT')};
   const expected=mode==='development'?'DEV_DB':mode==='staging'?'STAGING_DB':null;
   let reason=null;
   if(!mode)reason='deployment_env_missing';

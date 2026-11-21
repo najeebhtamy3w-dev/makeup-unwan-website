@@ -16,6 +16,6 @@ const disabled=await onRequestGet({env:{DEPLOYMENT_ENV:'production'}});
 assert.equal(disabled.status,503);
 const missing=await onRequestGet({env:{DEPLOYMENT_ENV:'staging'}});
 assert.equal(missing.status,503);
-const healthy=await onRequestGet({env:{DEPLOYMENT_ENV:'staging',STAGING_DB:{prepare(){return {async first(){return {ok:1}}}}}}});
+const healthy=await onRequestGet({env:{DEPLOYMENT_ENV:'staging',STAGING_DB:{prepare(){return {async first(){return {ok:1}},bind(...t){return {async all(){return {results:t.map(name=>({name}))}}}}}}}}});
 assert.equal(healthy.status,200);
 console.log('PASS Pages route guard and health handler (mock)');
