@@ -1,5 +1,0 @@
-# Preserve printed QR codes: redirect only the public landing page.
-# Do not redirect /admin, /admin.html, /.netlify/functions/*, or other paths.
-# Temporary redirect for validation; switch to 301! only after production smoke tests.
-/ https://makeup-unwan-website.pages.dev/ 302!
-/index.html https://makeup-unwan-website.pages.dev/ 302!
