@@ -6,4 +6,5 @@ bad += run(['tools/build-config.mjs', '--check']) ? 1 : 0;
 bad += run(['--import', './tests/stub/register.mjs', 'tests/backend.test.mjs']) ? 1 : 0;
 bad += run(['--import', './tests/stub/register.mjs', 'tests/browser.test.mjs']) ? 1 : 0;
 bad += run(['--import', './tests/stub/register.mjs', 'tests/smoke-selftest.mjs']) ? 1 : 0;
+bad += run(['--import', './tests/stub/register.mjs', 'tests/community.test.mjs']) ? 1 : 0;
 process.exit(bad ? 1 : 0);

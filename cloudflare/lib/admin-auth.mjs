@@ -37,7 +37,8 @@ export async function requireStagingAdmin(request,env,{now=Date.now()}={}){
  const db=resolveAppDatabase(env);
  const ip=request.headers.get('cf-connecting-ip')||'unknown';
  const bucket=Array.from((await digest(env.RATE_LIMIT_SALT,ip)).slice(0,8),b=>b.toString(16).padStart(2,'0')).join('');
- const given=request.headers.get('x-admin-password')||'';
+ // Ignore surrounding spaces / NBSP that phone copy-paste can add; the comparison stays exact.
+ const given=(request.headers.get('x-admin-password')||'').replace(/^[\s\u00a0]+|[\s\u00a0]+$/g,'');
  const windowStart=Math.floor(now/ADMIN_FAIL_WINDOW_MS)*ADMIN_FAIL_WINDOW_MS;
  const retryAfter=Math.max(1,Math.ceil((windowStart+ADMIN_FAIL_WINDOW_MS-now)/1000));
  if(await failedAttempts(db,bucket,windowStart)>=ADMIN_FAIL_LIMIT)

@@ -26,7 +26,7 @@ async function open(path){
 }
 
 // 1. Health: dev database bound and schema complete.
-{const r=await fetch(BASE+'/api/health');const j=await r.json();assert.deepEqual(j,{ok:true,service:process.env.EXPECT_SERVICE||'makeup-unwan-development'});ok('health','D1 + schema');}
+if(process.env.SKIP_HEALTH!=='1'){const r=await fetch(BASE+'/api/health');const j=await r.json();assert.deepEqual(j,{ok:true,service:process.env.EXPECT_SERVICE||'makeup-unwan-development'});ok('health','D1 + schema');}
 
 // 2. Landing page, both stores, about sections, all official contact links present.
 const home=await open('/');

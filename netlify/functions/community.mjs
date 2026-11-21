@@ -42,8 +42,9 @@ export default async function handler(request,context){
   const blocked=await limited(request,context,'community-create',4);if(blocked)return blocked;
   const b=await read(request),t=clean(b.text);
   if(!kinds.includes(b.kind)||t.length<15||t.length>420||rejectLinks(t)||/[<>]/.test(t)||b.consent!==true)return json(400,{error:'تأكد من النوع والنص والموافقة، ولا تضع روابط أو أرقام أو رموز HTML.'});
-  const id=randomUUID(),x={id,kind:b.kind,text:t,status:'pending',createdAt:new Date().toISOString()};
-  await posts().setJSON('posts/'+id,x);return json(201,{reference:id.slice(0,8),status:'pending'});
+  // Instant publish (parity with Cloudflare v1.3.3): visible immediately; admins can still hide it.
+  const id=randomUUID(),x={id,kind:b.kind,text:t,status:'approved',createdAt:new Date().toISOString()};
+  await posts().setJSON('posts/'+id,x);return json(201,{reference:id.slice(0,8),status:'approved',id});
  }
  if(action==='moderate'){
   const denied=await requireAdmin(request,context);if(denied)return denied;

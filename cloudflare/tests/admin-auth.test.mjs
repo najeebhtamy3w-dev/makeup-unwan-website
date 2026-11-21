@@ -53,6 +53,7 @@ async function call(fn,env,{password=PASSWORD,ip='192.0.2.10',path='/.netlify/fu
  assert.equal(r.status,401);assert.equal(r.body.code,'ADMIN_BAD_PASSWORD');
  assert.equal((await call(session,env,{password:PASSWORD+' '})).status,200,'Fetch trims header whitespace: an accidental trailing space from a phone keyboard is tolerated');
  assert.equal((await call(session,env,{password:PASSWORD.toLowerCase()})).status,401,'case-sensitive');
+ assert.equal((await call(session,env,{password:'\u00a0'+PASSWORD+'\u00a0'})).status,200,'NBSP around a pasted password is tolerated');
  assert.ok(!JSON.stringify(r.body).includes(PASSWORD),'response must not leak the password');
 }
 // 3. Temporary lockout after repeated failures -> 429 with Retry-After, even for the correct password;

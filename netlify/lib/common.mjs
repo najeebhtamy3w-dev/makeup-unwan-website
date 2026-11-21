@@ -148,7 +148,8 @@ import { timingSafeEqual } from 'node:crypto';
 export async function requireAdmin(request, context) {
   const expected = process.env.ADMIN_PASSWORD || '';
   if (expected.length < 12) return json(503, { error: 'لوحة الإدارة غير مهيأة' });
-  const given = request.headers.get('x-admin-password') || '';
+  // Ignore surrounding spaces / NBSP that phone copy-paste can add; the comparison stays exact.
+  const given = (request.headers.get('x-admin-password') || '').replace(/^[\s\u00a0]+|[\s\u00a0]+$/g, '');
   const max = Number(process.env.ADMIN_MAX_FAILS) || 5;
   const windowMs = 15 * 60e3;
   let attempt;
