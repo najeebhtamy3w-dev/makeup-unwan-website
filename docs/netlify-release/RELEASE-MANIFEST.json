@@ -1,0 +1,125 @@
+{
+ "approved_draft": {
+  "deploy_id": "6b017b47eebaf80d19bd4df9",
+  "site": "makeup-unwan-upgrade-test",
+  "verified": "static files path+sha1 and function zip sha256 identical to this manifest (2026-11-21)"
+ },
+ "build": "node tools/netlify-bundle-functions.mjs netlify/functions <out> (zip-it-and-ship-it 9, esbuild) then tools/netlify-api-deploy.py; static dir public/; no build command",
+ "data_stores_read": [
+  "customer-feedback",
+  "contact-click-events",
+  "rate-guard",
+  "community-v1",
+  "community-events-v2",
+  "community-polls-v1"
+ ],
+ "functions": {
+  "admin-clicks": {
+   "invocationMode": "stream",
+   "runtime": "js",
+   "runtimeAPIVersion": 2,
+   "source_sha256": "fcaabc536e921b37b5534d115092cfb9ccace7ab6334ab5e1e073bb4236b64d4",
+   "zip_sha256": "668fdd9685477418601f9eef9a04f8d1a62dd7afe817c263175e45fb67eb4b91"
+  },
+  "admin-feedback": {
+   "invocationMode": "stream",
+   "runtime": "js",
+   "runtimeAPIVersion": 2,
+   "source_sha256": "72555fd93c7fd515e28d01924be1534eae5c46c591650e7b00897e535bd4cd80",
+   "zip_sha256": "43b7006ad5abd48a67f0ddc675556a5e09cbf58cdbe0c686c8b0d78195cdeae1"
+  },
+  "admin-session": {
+   "invocationMode": "stream",
+   "runtime": "js",
+   "runtimeAPIVersion": 2,
+   "source_sha256": "7715717a3f261067a007ea8ec39f48c0b18a2014770e5f767584874f12cd4523",
+   "zip_sha256": "50d6ebcecd829ef1258562f82417c35d1859d667257cf67c65f7c2b4ef066096"
+  },
+  "community": {
+   "invocationMode": "stream",
+   "runtime": "js",
+   "runtimeAPIVersion": 2,
+   "source_sha256": "2cd02b4d608a5c161b13dd451e78a3800ff3a5fe7bfc1f2a661851e23d971f72",
+   "zip_sha256": "80ca6fa77ddcaabc64d227c81b85bd9e201554e388e0eb2b8de65d4d9ddf7923"
+  },
+  "feedback": {
+   "invocationMode": "stream",
+   "runtime": "js",
+   "runtimeAPIVersion": 2,
+   "source_sha256": "41b5b3869a19f81948d6e4d2d7396461dd8b06a897f75f59ad05bf24107ece59",
+   "zip_sha256": "a9d600f215dce543776eb2f956ee991ef48cb76ad9008f59538ec687e54b3aba"
+  },
+  "track-click": {
+   "invocationMode": "stream",
+   "runtime": "js",
+   "runtimeAPIVersion": 2,
+   "source_sha256": "b1dcd00e93144d201bfcdb33537f1f3b3567380f0ba18bff977798365280ed2f",
+   "zip_sha256": "f3176db6b6a06361bfebd61e13b1a73a9a31ee515c7d94bacb917fc4f2e70246"
+  }
+ },
+ "release": "netlify-v2.0.0",
+ "shared_sources": {
+  "netlify.toml": "54af4bd6a7ae2116dc36d2004fa1cf69c255bced0ad983cbdb99cebbe7cbc683",
+  "netlify/lib/common.mjs": "5d2c29cf85de3a657bce1b75fb8cbb93e4ce2c44789ff42e2a92b35bb56977d8",
+  "package-lock.json": "51077b811370e3156e7f36551a6dd822d4d768b6309368a496ad897baca2e1dd",
+  "package.json": "38f423158199c870c0f03da4af32cc2546df34936123afb1081c6f713ad3b3d6"
+ },
+ "source_branch": "fix/netlify-community-parity",
+ "source_commit": "06b2c5fed442a9254dd7cf88c9d4b9066e0b1f37",
+ "static_files": {
+  "/_headers": {
+   "bytes": 2629,
+   "sha1": "a47a8054ac5315a8c9baed45eab65f6a31af4f67",
+   "sha256": "16305d04a8b0e199102a915a07c7caeb0c7f82da9b0e41a368a0ea0914b5f10b"
+  },
+  "/admin.html": {
+   "bytes": 38054,
+   "sha1": "a900010fb2eb98d9954c0e16f5859ad00d4e29ce",
+   "sha256": "89037ca26bc7f38b7e1cc89afa2c53cad8791cec268f21fcd4570e758e55f47c"
+  },
+  "/community-admin.html": {
+   "bytes": 3028,
+   "sha1": "33b97ae848585a948581d69ec067e66ac07398b2",
+   "sha256": "88319f4b833504f7f419b80bae33f81c4137ca1c93b73de32e6624ecf2bf44a1"
+  },
+  "/discover.js": {
+   "bytes": 4195,
+   "sha1": "0e2b5b3e34769fbf83298838c35555c9bb439381",
+   "sha256": "cc3a4205bfc3e391c1a532bc5d881996bff9b00b25661b526a7b879b0df2c5f0"
+  },
+  "/index.html": {
+   "bytes": 1121529,
+   "sha1": "5c64d1c61cd7a728fda1da561a2d4dfc0765240b",
+   "sha256": "7c00bc722080f3ed3f5cb6218e179d8c1fef4646ae704ac1dcd6d5b5bfd578a7"
+  },
+  "/masahatak.html": {
+   "bytes": 9977,
+   "sha1": "ec82dabd61d06f652a66e341702e48fb3deab059",
+   "sha256": "e7dc0e1a272b7fcb2056da240129911a8e83224e845569d4307d29d9a25e6d79"
+  },
+  "/masahatak.js": {
+   "bytes": 5748,
+   "sha1": "06481fc9a2bd3d23b9a9a8a9deb0f881004a889e",
+   "sha256": "81af7f7ea0ce89de8ebaf95f2096f71487668c1c18f0ced13619979dd3e6a0e3"
+  }
+ },
+ "target": {
+  "current_production_commit": "14f6642",
+  "current_production_deploy": "6afee86d0cdf3108ed491483",
+  "site": "admirable-brioche-723807.netlify.app",
+  "site_id": "3328fe96-2b69-407e-a265-436ad9b75d09"
+ },
+ "tests": {
+  "admin_ui_browser": "6/6",
+  "admin_ui_mobile": "2/2",
+  "browser_e2e_cloudflare_workerd": "10/10",
+  "browser_e2e_netlify_functions": "9/9",
+  "community_integration": "pass (instant publish, read-after-write, single switchable reaction + legacy, polls, password trim)",
+  "compat_on_original_backup": "9 messages, 30 clicks, 1 pending post in admin, 1 legacy vote preserved",
+  "deployed_bundle_proofs": "admin login 200/401/429 per-client; admin data 200; community 21/21 on test-site store",
+  "netlify_backend": "39/39",
+  "netlify_browser": "30/30",
+  "owner_phone_acceptance": "6/6 on draft 6b017b47 without VPN (2026-11-21)",
+  "smoke": "1/1"
+ }
+}
