@@ -1,9 +1,10 @@
 import {readFileSync,writeFileSync} from 'node:fs';
 import {chromium} from 'playwright';
 const dir='production-qr-codes/';
-const items=[['makeup-unwan-main','الموقع الرسمي','ميك أب هاوس × عنوان العطر','https://makeup-unwan-prod.pages.dev/'],
- ['makeup-house','ميك أب هاوس','امسح للوصول مباشرة إلى صفحة المحل','https://makeup-unwan-prod.pages.dev/#makeup'],
- ['unwan-perfume','عنوان العطر','امسح للوصول مباشرة إلى صفحة المحل','https://makeup-unwan-prod.pages.dev/#perfume']];
+const BASE=process.env.QR_BASE||'https://makeup-unwan-prod.pages.dev/';
+const items=[['makeup-unwan-main','الموقع الرسمي','ميك أب هاوس × عنوان العطر',BASE],
+ ['makeup-house','ميك أب هاوس','امسح للوصول مباشرة إلى صفحة المحل',BASE+'#makeup'],
+ ['unwan-perfume','عنوان العطر','امسح للوصول مباشرة إلى صفحة المحل',BASE+'#perfume']];
 const svg=n=>readFileSync(dir+n+'.svg','utf8').replace(/<\?xml[^>]*>/,'').replace('class="segno"','class="qr"');
 const html=`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><style>
 @page{size:A4;margin:12mm}*{box-sizing:border-box}body{font-family:'Noto Naskh Arabic','Noto Sans Arabic','DejaVu Sans',sans-serif;margin:0;color:#000;background:#fff}
