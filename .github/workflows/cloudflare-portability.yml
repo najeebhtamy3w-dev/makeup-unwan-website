@@ -31,11 +31,16 @@ jobs:
           node --check functions/.netlify/functions/track-click.js
           node --check functions/.netlify/functions/admin-feedback.js
           node --check functions/.netlify/functions/admin-clicks.js
+          node --check functions/.netlify/functions/admin-session.js
           node --check cloudflare/lib/environment-db.mjs
           node --check cloudflare/lib/admin-auth.mjs
           node --check cloudflare/lib/community-atomic.mjs
           node --check cloudflare/lib/atomic-rate-limit.mjs
           node --check cloudflare/lib/d1-store.mjs
+      - name: Check CSP hashes match inline scripts (netlify.toml and public/_headers)
+        run: node tools/build-config.mjs --check
+      - name: Check admin login, lockout and error separation
+        run: node cloudflare/tests/admin-auth.test.mjs
       - name: Check unified admin UI contract
         run: node cloudflare/tests/admin-ui-contract.test.mjs
       - name: Check Cloudflare CSP parity

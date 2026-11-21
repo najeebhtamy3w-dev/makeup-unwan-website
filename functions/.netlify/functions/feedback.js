@@ -5,7 +5,7 @@ import {checkRateLimit} from '../../../cloudflare/lib/atomic-rate-limit.mjs';
 const reply=(status,body)=>Response.json(body,{status,headers:{'cache-control':'no-store','x-content-type-options':'nosniff'}});
 async function bucket(secret,ip){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);const bytes=new Uint8Array(await crypto.subtle.sign('HMAC',k,new TextEncoder().encode(ip)));return [...bytes.slice(0,8)].map(x=>x.toString(16).padStart(2,'0')).join('');}
 export async function onRequest({request,env}){
- if(!resolveAppDatabase(env)||!env.RATE_LIMIT_SALT||env.RATE_LIMIT_SALT.length<32||!env.ADMIN_PASSWORD||env.ADMIN_PASSWORD.length<20)return reply(503,{error:'خدمة الاستقبال غير مهيأة من الإدارة'});
+ if(!resolveAppDatabase(env)||!env.RATE_LIMIT_SALT||env.RATE_LIMIT_SALT.length<32||!env.ADMIN_PASSWORD||env.ADMIN_PASSWORD.length<15)return reply(503,{error:'خدمة الاستقبال غير مهيأة من الإدارة'});
  if(request.method!=='POST')return reply(405,{error:'Method not allowed'});
  if(request.headers.get('origin')!==new URL(request.url).origin)return reply(403,{error:'Origin not allowed'});
  try{

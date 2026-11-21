@@ -20,6 +20,7 @@ const handlers = {
   'track-click': (await import('../netlify/functions/track-click.mjs')).default,
   'admin-clicks': (await import('../netlify/functions/admin-clicks.mjs')).default,
   'admin-feedback': (await import('../netlify/functions/admin-feedback.mjs')).default,
+  'admin-session': (await import('../netlify/functions/admin-session.mjs')).default,
   feedback: (await import('../netlify/functions/feedback.mjs')).default
 };
 const { adenDay, addDays } = await import('../netlify/lib/common.mjs');
@@ -211,9 +212,9 @@ await T('AT-DISCOVER', 'Discover cards are interactive; edits persist locally an
 },'browser');
 
 /* layout / publish */
-await T('AT13', 'public/ contains only approved V1.2 pages and V1.3.1 community assets; source, package.json, docs, tests are NOT published', async () => {
+await T('AT13', 'public/ contains only approved V1.2 pages, V1.3.1 community assets and the generated Cloudflare _headers; source, package.json, docs, tests are NOT published', async () => {
   const files = fs.readdirSync(PUB).sort();
-  eq(files.join(), ['admin.html', 'community-admin.html', 'discover.js', 'index.html', 'masahatak.html', 'masahatak.js'].join(','), 'exact approved publish allowlist');
+  eq(files.join(), ['_headers', 'admin.html', 'community-admin.html', 'discover.js', 'index.html', 'masahatak.html', 'masahatak.js'].join(','), 'exact approved publish allowlist');
   for (const p of ['/netlify/functions/track-click.mjs', '/netlify/lib/common.mjs', '/package.json', '/netlify.toml', '/docs/archive/README-AR.txt', '/tests/backend.test.mjs']) { const r = await fetch(base + p); eq(r.status, 404, p); }
   eq(toml.build.publish, 'public'); eq(toml.build.functions, 'netlify/functions'); ok(toml.redirects.length >= 6); return 'published=' + files.join('+') + '; 6 probe paths -> 404 (local server of public/ only; Netlify itself NOT TESTED)'; }, 'static');
 await T('AT13b', 'netlify.toml is in sync with the inline scripts (CSP hashes)', async () => { execFileSync('node', [path.join(ROOT, 'tools/build-config.mjs'), '--check']); return 'in sync'; }, 'static');
