@@ -15,7 +15,7 @@ const records=new Map();
 const db={prepare(sql){return{bind(...args){return{
  async run(){if(sql.startsWith('INSERT INTO rate_windows'))return {meta:{changes:1}};throw Error('Unexpected SQL write '+sql);},
  async all(){if(sql.startsWith('SELECT key FROM app_records')){const [store,lo,hi,cursor]=args;return{results:[...records.keys()].filter(k=>k.startsWith(store+'|')).map(k=>k.slice(store.length+1)).filter(k=>k>=lo&&k<hi&&k>cursor).sort().slice(0,250).map(key=>({key}))};}if(sql.startsWith('SELECT discriminator,choice,COUNT(*)'))return {results:[]};throw Error('Unexpected SQL list '+sql);},
- async first(){if(sql.startsWith('SELECT value FROM app_records')){const [store,key]=args;const value=records.get(store+'|'+key);return value===undefined?null:{value};}throw Error('Unexpected SQL read '+sql);}
+ async first(){if(sql.startsWith('SELECT hits FROM rate_windows'))return null;if(sql.startsWith('SELECT value FROM app_records')){const [store,key]=args;const value=records.get(store+'|'+key);return value===undefined?null:{value};}throw Error('Unexpected SQL read '+sql);}
 }}}}};
 const env={DEPLOYMENT_ENV:'development',DEV_DB:db,RATE_LIMIT_SALT:'s'.repeat(64),ADMIN_PASSWORD:'unified-test-password-long-enough'};
 records.set('customer-feedback|msg1',JSON.stringify({id:'msg1',store:'makeup',kind:'اقتراح',message:'تجربة',createdAt:'2026-11-20T00:00:00Z'}));
