@@ -1,4 +1,4 @@
-// Regenerates netlify.toml (publish dir, redirects, security headers incl. CSP hashes)
+// Regenerates netlify.toml and public/_headers (publish dir, redirects, security headers incl. CSP hashes)
 // from the inline <script> blocks in public/*.html.
 //   node tools/build-config.mjs          -> writes netlify.toml
 //   node tools/build-config.mjs --check  -> exits 1 if netlify.toml is out of date
@@ -92,6 +92,8 @@ ${block('/index.html', 'index.html')}
 ${block('/admin', 'admin.html', '\n    X-Robots-Tag = "noindex, nofollow"\n    Cache-Control = "no-store"')}
 ${block('/admin.html', 'admin.html', '\n    X-Robots-Tag = "noindex, nofollow"\n    Cache-Control = "no-store"')}`;
 
+// Cloudflare Pages reads public/_headers. It MUST carry the same CSP hashes, otherwise the
+// browser blocks the inline admin script and the login button silently does nothing.
 const cfCommon = `  X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
@@ -111,12 +113,13 @@ ${cfBlock('/', 'index.html')}
 ${cfBlock('/index.html', 'index.html')}
 ${cfBlock('/admin', 'admin.html', cfAdmin)}
 ${cfBlock('/admin.html', 'admin.html', cfAdmin)}`;
+
 const outputs = [[join(root, 'netlify.toml'), toml], [join(root, 'public', '_headers'), cfHeaders]];
 if (process.argv.includes('--check')) {
- let stale = false;
- for (const [file, text] of outputs) {
-  if (readFileSync(file, 'utf8') !== text) { console.error(`${file.slice(root.length + 1)} is out of date: run node tools/build-config.mjs`); stale = true; }
- }
- if (stale) process.exit(1);
- console.log('netlify.toml and public/_headers up to date');
+  let stale = false;
+  for (const [file, text] of outputs) {
+    if (readFileSync(file, 'utf8') !== text) { console.error(`${file.slice(root.length + 1)} is out of date: run node tools/build-config.mjs`); stale = true; }
+  }
+  if (stale) process.exit(1);
+  console.log('netlify.toml and public/_headers up to date');
 } else { for (const [file, text] of outputs) writeFileSync(file, text); console.log('wrote netlify.toml and public/_headers'); }

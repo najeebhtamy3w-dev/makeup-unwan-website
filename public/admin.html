@@ -38,6 +38,7 @@ el('exportReport').onclick=()=>{if(!clickData){alert('الإحصاءات غير 
 async function fetchClicks(pass){setStatus('clicksStatus','load','جارٍ تحميل إحصاءات النقرات…');let r;try{r=await fetch('/.netlify/functions/admin-clicks?range='+encodeURIComponent(state.range),{headers:{'x-admin-password':pass},cache:'no-store'})}catch(e){throw Error('تعذر الاتصال بالخادم. تحقق من الإنترنت.')}let d=await r.json().catch(()=>({}));if(!r.ok)throw Error(adminErrorMessage(r.status,d,'تعذر جلب النقرات'));clickData=d;clickError='';if(d.complete===false)setStatus('clicksStatus','warn','قد تكون الأرقام ناقصة: تجاوزت القراءة الوقت المسموح. أعد المحاولة أو اختر فترة أقصر.',refreshClicks);else setStatus('clicksStatus','ok','آخر تحديث: '+new Date(d.generatedAt).toLocaleTimeString('ar-YE',{timeZone:'Asia/Aden'})+' (توقيت اليمن)'+(d.passwordWeak?' — تنبيه: كلمة مرور الإدارة أقصر من 15 حرفًا.':''));render()}
 async function refreshClicks(){if(!adminPassword)return;try{await fetchClicks(adminPassword)}catch(e){clickData=null;clickError=e.message;setStatus('clicksStatus','err','تعذر تحميل النقرات: '+e.message,refreshClicks);render()}}
 async function fetchFeedback(pass){let r;try{r=await fetch('/.netlify/functions/admin-feedback',{method:'GET',headers:{'x-admin-password':pass},cache:'no-store'})}catch(e){throw Error('تعذر الاتصال بالخادم. تحقق من الإنترنت.')}let d=await r.json().catch(()=>({}));if(!r.ok)throw Error(adminErrorMessage(r.status,d,'تعذر الاتصال بخدمة الرسائل'));if(!Array.isArray(d.items))throw Error('استجابة غير صالحة من الخادم');feedback=d.items.filter(x=>x&&typeof x.id==='string'&&['makeup','perfume'].includes(x.store)&&typeof x.message==='string');feedbackLoaded=true;const notes=[];if(d.complete===false)notes.push('قد تكون القائمة ناقصة لتجاوز الوقت المسموح');if(d.undated>0)notes.push(d.undated+' رسالة بلا تاريخ (تظهر في النهاية)');if(d.skipped>0)notes.push(d.skipped+' سجل غير صالح تم تجاهله');setStatus('feedbackStatus',d.complete===false?'warn':'ok',notes.length?notes.join(' · '):'',d.complete===false?(()=>resetFeedback()):null);render();if(d.hasMore)alert('هناك أكثر من 500 رسالة. تعرض اللوحة أول 500 فقط.');return feedback.length}
+// Maps server/network failures to distinct, actionable messages (401 / 429 / 503 / network).
 function adminErrorMessage(status,data,fallback){
  if(status===401)return 'كلمة المرور غير صحيحة. تأكد من الأحرف الكبيرة والصغيرة (لوحة مفاتيح الهاتف قد تكبّر الحرف الأول).';
  if(status===429){const m=Math.ceil((Number(data&&data.retryAfter)||900)/60);return 'محاولات كثيرة: تم إيقاف الدخول مؤقتًا بعد عدة محاولات خاطئة. حاول بعد '+m+' دقيقة تقريبًا.'}
@@ -50,7 +51,7 @@ async function verifyAdminPassword(pass){
  try{response=await fetch('/.netlify/functions/admin-session',{method:'GET',headers:{'x-admin-password':pass},cache:'no-store'})}
  catch{throw Error('تعذر الاتصال بالخادم للتحقق من الدخول. تحقق من الإنترنت أو من إمكانية الوصول إلى الموقع.')}
  const result=await response.json().catch(()=>({}));
- if(!response.ok){if(result&&!result.retryAfter)result.retryAfter=Number(response.headers.get('retry-after'))||undefined;throw Error(adminErrorMessage(response.status,result,'تعذر التحقق من الدخول'))};
+ if(!response.ok){if(result&&!result.retryAfter)result.retryAfter=Number(response.headers.get('retry-after'))||undefined;throw Error(adminErrorMessage(response.status,result,'تعذر التحقق من الدخول'))}
  if(result.ok!==true||result.role!=='admin')throw Error('استجابة التحقق غير صالحة');
 }
 async function enter(){let pass=el('demoPass').value;el('loginError').textContent='';if(!pass){el('loginError').textContent='أدخل كلمة مرور الإدارة';return}if(location.protocol==='file:'){el('loginError').textContent='تتطلب لوحة الإدارة تشغيل الموقع عبر استضافة الويب، وليس فتح الملف محليًا.';return}el('enter').disabled=true;el('enter').textContent='جارٍ التحقق...';try{await verifyAdminPassword(pass);adminPassword=pass;el('demoPass').value='';el('login').classList.add('hide');render();void Promise.allSettled([resetFeedback(),refreshClicks()])}catch(e){el('loginError').textContent=e.message}finally{el('enter').disabled=false;el('enter').textContent='دخول إلى لوحة الإدارة'}}
@@ -63,7 +64,9 @@ el('logout').onclick=()=>{el('communityItems').replaceChildren();setStatus('comm
 async function communityRequest(action,body){
  const opts={method:body?'POST':'GET',headers:{'x-admin-password':adminPassword},cache:'no-store'};
  if(body){opts.headers['content-type']='application/json';opts.body=JSON.stringify(body)}
- let r;try{r=await fetch('/.netlify/functions/community?action='+encodeURIComponent(action),opts)}catch{throw Error('تعذر الاتصال بخدمة المجتمع. تحقق من الإنترنت ثم أعد المحاولة.')}
+ let r;
+ try{r=await fetch('/.netlify/functions/community?action='+encodeURIComponent(action),opts)}
+ catch{throw Error('تعذر الاتصال بخدمة المجتمع. تحقق من الإنترنت ثم أعد المحاولة.')}
  const data=await r.json().catch(()=>({}));
  if(!r.ok)throw Error(adminErrorMessage(r.status,data,'فشل طلب إدارة المجتمع'));
  return data;

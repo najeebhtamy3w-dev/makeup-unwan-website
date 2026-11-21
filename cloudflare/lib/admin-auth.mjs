@@ -7,20 +7,29 @@ async function digest(secret,value){
  return new Uint8Array(await crypto.subtle.sign('HMAC',key,bytes(value)));
 }
 function equal(a,b){if(a.length!==b.length)return false;let diff=0;for(let i=0;i<a.length;i++)diff|=a[i]^b[i];return diff===0;}
+
+// Only FAILED credential checks count toward the lockout. The previous version counted
+// every authenticated request (login + inbox + clicks + community + each refresh/moderation)
+// in one 20-per-15-minutes window, so a CORRECT password was rejected with 429 after
+// ordinary dashboard use, which looked to the owner like a wrong password.
 export const ADMIN_FAIL_LIMIT=10;
 export const ADMIN_FAIL_WINDOW_MS=900000;
 const FAIL_SCOPE='admin-auth-fail';
+
+// Non-secret configuration diagnosis: names what is missing, never any value.
 export function adminConfigProblem(env){
  if(!resolveAppDatabase(env))return 'database';
  if(typeof env.RATE_LIMIT_SALT!=='string'||env.RATE_LIMIT_SALT.length<32)return 'rate_limit_salt';
  if(typeof env.ADMIN_PASSWORD!=='string'||env.ADMIN_PASSWORD.length<15)return 'admin_password';
  return null;
 }
+
 async function failedAttempts(db,bucket,windowStart){
  const row=await db.prepare('SELECT hits FROM rate_windows WHERE scope=? AND bucket=? AND window_start=?')
   .bind(FAIL_SCOPE,bucket,windowStart).first();
  return Number(row?.hits)||0;
 }
+
 export async function requireStagingAdmin(request,env,{now=Date.now()}={}){
  const fail=(status,error,code,extra={},headers={})=>Response.json({error,code,...extra},{status,headers:{'cache-control':'no-store',...headers}});
  const problem=adminConfigProblem(env);
