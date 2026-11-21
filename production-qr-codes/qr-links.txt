@@ -1,0 +1,8 @@
+روابط رموز QR الرسمية — ميك أب هاوس × عنوان العطر
+Official QR links (production)
+
+makeup-unwan-main: https://makeup-unwan-prod.pages.dev/
+makeup-house: https://makeup-unwan-prod.pages.dev/#makeup
+unwan-perfume: https://makeup-unwan-prod.pages.dev/#perfume
+
+النطاق makeup-unwan-prod.pages.dev نطاق Cloudflare مجاني. تغييره مستقبلًا يتطلب إعادة طباعة هذه الرموز.
