@@ -13,16 +13,33 @@ const ownerHash=(req,ctx)=>createHash('sha256').update(ipKey(clientIp(req,ctx))+
 async function read(req){const t=await req.text();if(t.length>4000)throw Error('payload too large');return JSON.parse(t||'{}');}
 async function limited(req,ctx,scope,max=8){const r=await hit(strongStore('rate-guard'),scope,ipKey(clientIp(req,ctx)),3600000,max);return r.allowed?null:json(429,{error:'طلبات كثيرة. حاول لاحقًا.'});}
 async function listing(s,prefix){const keys=[];for await(const page of s.list({prefix,paginate:true}))for(const b of page.blobs)keys.push(b.key);return keys;}
-async function reactionCounts(id){const keys=await listing(events(),'reaction/'+id+'/');const counts=Object.fromEntries(emojis.map(e=>[e,0]));for(const key of keys){const e=key.split('/')[2];if(emojis.includes(e))counts[e]++;}return counts;}
+// One switchable reaction per person and post (approved policy, parity with Cloudflare v1.3.3).
+// Current choice: events 'selection/<post>/<owner>' -> emoji. Legacy 'reaction/<post>/<emoji>/<owner>'
+// rows (old multi-emoji model) are kept untouched; an owner without a selection counts once, with
+// their most recent legacy emoji, so no earlier reaction is lost or double counted.
+async function reactionState(id,owner){
+ const chosen=new Map();
+ for(const key of await listing(events(),'selection/'+id+'/')){const e=await events().get(key);if(emojis.includes(e))chosen.set(key.split('/')[2],e);}
+ const legacy=new Map();
+ for(const key of await listing(events(),'reaction/'+id+'/')){
+  const [, , e, o]=key.split('/');if(!emojis.includes(e)||!o||chosen.has(o))continue;
+  const at=String(await events().get(key)||'');const prev=legacy.get(o);if(!prev||at>prev.at)legacy.set(o,{e,at});
+ }
+ const counts=Object.fromEntries(emojis.map(e=>[e,0]));
+ for(const e of chosen.values())counts[e]++;
+ for(const {e} of legacy.values())counts[e]++;
+ return {counts,mine:(owner&&(chosen.get(owner)||legacy.get(owner)?.e))||null};
+}
+async function reactionCounts(id){return (await reactionState(id)).counts;}
 async function votes(id){const keys=await listing(events(),'vote/'+id+'/');const counts=[0,0];for(const key of keys){const n=Number(key.split('/')[2]);if(n===0||n===1)counts[n]++;}return counts;}
-const publicItem=async x=>({id:x.id,kind:x.kind,text:x.text,createdAt:x.createdAt,reactions:await reactionCounts(x.id)});
+const publicItem=async(x,owner)=>{const r=await reactionState(x.id,owner);return {id:x.id,kind:x.kind,text:x.text,createdAt:x.createdAt,reactions:r.counts,myReaction:r.mine};};
 export default async function handler(request,context){
  const url=new URL(request.url),action=url.searchParams.get('action')||'list';
  try{
  if(request.method==='GET'&&action==='list'){
   const keys=(await listing(posts(),'posts/')).slice(-400);const items=[];
   for(const key of keys){const x=await posts().get(key,{type:'json'});if(x?.status==='approved')items.push(x);}
-  items.sort((a,b)=>b.createdAt.localeCompare(a.createdAt));return json(200,{items:await Promise.all(items.slice(0,60).map(publicItem))});
+  items.sort((a,b)=>b.createdAt.localeCompare(a.createdAt));const me=ownerHash(request,context);return json(200,{items:await Promise.all(items.slice(0,60).map(x=>publicItem(x,me)))});
  }
  if(action==='poll'&&request.method==='GET'){
   const id=url.searchParams.get('id');if(!uuid(id))return json(400,{error:'معرف غير صالح'});
@@ -56,9 +73,10 @@ export default async function handler(request,context){
   const blocked=await limited(request,context,'community-react',25);if(blocked)return blocked;
   const b=await read(request);if(!uuid(b.id)||!emojis.includes(b.emoji))return json(400,{error:'تفاعل غير صالح'});
   const x=await posts().get('posts/'+b.id,{type:'json'});if(!x||x.status!=='approved')return json(404,{error:'المنشور غير متاح'});
-  const key='reaction/'+b.id+'/'+b.emoji+'/'+ownerHash(request,context);
-  if(await events().get(key))return json(409,{error:'سبق تسجيل هذا التفاعل'});
-  await events().set(key,new Date().toISOString());return json(200,{reactions:await reactionCounts(b.id)});
+  const me=ownerHash(request,context),before=await reactionState(b.id,me);
+  if(before.mine===b.emoji)return json(200,{changed:false,myReaction:b.emoji,reactions:before.counts});
+  await events().set('selection/'+b.id+'/'+me,b.emoji);
+  const after=await reactionState(b.id,me);return json(200,{changed:true,myReaction:after.mine,reactions:after.counts});
  }
  if(action==='report'){
   const blocked=await limited(request,context,'community-report',5);if(blocked)return blocked;

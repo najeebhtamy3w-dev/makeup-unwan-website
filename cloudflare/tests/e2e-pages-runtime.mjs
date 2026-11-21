@@ -84,7 +84,17 @@ let postId;
  assert.equal(react.s,200);assert.equal(react.b.reactions['✨'],1);
  const report=await p.evaluate(async id=>(await fetch('/.netlify/functions/community?action=report',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id})})).status,postId);
  assert.equal(report,201);
- await p.close();ok('community','post + reaction + report stored and read back');
+ // UI: the post card shows the stored reaction as selected after a full reload, and switching
+ // moves the single reaction instead of adding a second one.
+ await p.reload();await p.click('[data-tab="community"]');
+ const card=()=>p.locator('#posts article',{hasText:stamp});
+ await card().waitFor({timeout:8000});
+ assert.equal(await card().locator('button',{hasText:'✨'}).getAttribute('aria-pressed'),'true','my reaction highlighted after reload');
+ await card().locator('button',{hasText:'💡'}).click();
+ await p.waitForFunction(s=>{const a=[...document.querySelectorAll('#posts article')].find(x=>x.textContent.includes(s));return a&&a.querySelector('button[aria-pressed="true"]')?.textContent.startsWith('💡')},stamp,{timeout:8000});
+ const counts=await card().locator('button').allTextContents();
+ assert.ok(counts.some(t=>t.startsWith('💡 1'))&&counts.some(t=>t.startsWith('✨ 0')),'switch moved the reaction: '+counts.join(' | '));
+ await p.close();ok('community','post + reaction + report stored and read back; reaction highlighted after reload; switch moves it');
 }
 
 // 5b. «بيننا» (comparison poll stored in D1 + vote), «عالمي» (device-local wishes), «اكتشف» (tab opens).
