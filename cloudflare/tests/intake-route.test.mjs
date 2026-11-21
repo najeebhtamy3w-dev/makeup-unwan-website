@@ -19,6 +19,14 @@ assert.equal([...records.keys()].filter(k=>k.startsWith('customer-feedback|')).l
 assert.equal((await send(feedback,{store:'perfume',kind:'اقتراح',message:'قصير'})).status,400);
 assert.equal((await send(feedback,{store:'makeup',kind:'اقتراح',message:'أرجو توفير المزيد من الهدايا الجميلة'},'https://evil.example')).status,403);
 assert.equal((await send(feedback,{website:'bot'})).status,200);
+// The owner's admin password is 15 characters (PR #11): the public feedback form must accept
+// that configuration instead of failing closed with 503; shorter or missing stays closed.
+{const saved=env.ADMIN_PASSWORD;
+ env.ADMIN_PASSWORD='Abc123Def456Ghi';assert.equal(env.ADMIN_PASSWORD.length,15);
+ assert.equal((await send(feedback,{store:'perfume',kind:'اقتراح',message:'رسالة اختبار بطول مناسب للتحقق'})).status,201,'15-char admin password must not disable customer feedback');
+ env.ADMIN_PASSWORD='short-password';assert.equal((await send(feedback,{store:'perfume',kind:'اقتراح',message:'رسالة اختبار بطول مناسب للتحقق'})).status,503);
+ delete env.ADMIN_PASSWORD;assert.equal((await send(feedback,{store:'perfume',kind:'اقتراح',message:'رسالة اختبار بطول مناسب للتحقق'})).status,503);
+ env.ADMIN_PASSWORD=saved;}
 assert.equal((await send(click,{store:'perfume',channel:'whatsapp'})).status,201);
 assert.equal([...records.keys()].filter(k=>k.startsWith('contact-click-events|v2/')).length,1);
 assert.equal((await send(click,{store:'invalid',channel:'whatsapp'})).status,400);
