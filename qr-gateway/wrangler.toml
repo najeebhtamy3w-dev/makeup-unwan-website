@@ -1,0 +1,13 @@
+# QR gateway Worker — PROTOTYPE, NOT DEPLOYED.
+# Lives in its own folder so Cloudflare Pages (which builds from the repo root) ignores it.
+# Deploying requires the owner's approval of the final origins and a custom domain/route.
+name = "makeup-unwan-qr-gateway"
+main = "src/worker.mjs"
+compatibility_date = "2026-11-01"
+workers_dev = false
+
+[vars]
+# Priority order. Example only — the owner must approve the real values before deployment.
+ORIGINS = "https://admirable-brioche-723807.netlify.app,https://makeup-unwan.pages.dev"
+PROBE_TIMEOUT_MS = "2500"
+HEALTH_TTL_S = "30"

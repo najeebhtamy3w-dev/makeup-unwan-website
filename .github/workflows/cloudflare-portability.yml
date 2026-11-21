@@ -10,6 +10,9 @@ on:
       - 'public/masahatak.js'
       - 'public/admin.html'
       - '.github/workflows/cloudflare-portability.yml'
+      - 'qr-gateway/**'
+      - 'netlify/**'
+      - 'netlify.toml'
   workflow_dispatch:
 jobs:
   portable-staging-tests:
@@ -39,6 +42,10 @@ jobs:
           node --check cloudflare/lib/d1-store.mjs
       - name: Check CSP hashes match inline scripts (netlify.toml and public/_headers)
         run: node tools/build-config.mjs --check
+      - name: Check redirect safety (shared _redirects, no pages.dev targets)
+        run: node cloudflare/tests/redirects-safety.test.mjs
+      - name: Check QR gateway prototype
+        run: node qr-gateway/test/gateway.test.mjs
       - name: Check admin login, lockout and error separation
         run: node cloudflare/tests/admin-auth.test.mjs
       - name: Check unified admin UI contract

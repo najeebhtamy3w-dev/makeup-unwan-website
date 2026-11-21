@@ -115,14 +115,16 @@ export async function hit(store, scope, bucket, windowMs, limit, now = Date.now(
   return { allowed: true, count: seen.inWindow.length, retryAfter: 0, release: async () => { await store.delete(key).catch(() => {}); } };
 }
 
-// Remove old limiter markers globally (called from the admin stats endpoint).
-export async function sweepGuards(store, maxAgeMs = 3600e3, maxDeletes = 500, now = Date.now()) {
+// Only known, expired protection markers may be cleaned. Unknown keys stay intact.
+const GUARD_TTL = Object.freeze({ c: 60e3, f: 10 * 60e3, a: 15 * 60e3, fcap: 24 * 3600e3 });
+export async function sweepGuards({ maxDeletes = 500, now = Date.now() } = {}) {
+  const store = strongStore('rate-guard');
   let deleted = 0;
   for await (const page of store.list({ prefix: 'rl/', paginate: true })) {
     for (const b of page.blobs) {
-      const m = /-?(\d{13})-[0-9a-f-]{36}$/.exec(b.key);
-      if (m && Number(m[1]) < now - maxAgeMs) {
-        await store.delete(b.key).catch(() => {});
+      const m = /^rl\/(c|f|a|fcap)\/[^/]+\/(\d{13})-[0-9a-f-]{36}$/.exec(b.key);
+      if (m && Number(m[2]) + GUARD_TTL[m[1]] <= now) {
+        await store.delete(b.key);
         if (++deleted >= maxDeletes) return deleted;
       }
     }

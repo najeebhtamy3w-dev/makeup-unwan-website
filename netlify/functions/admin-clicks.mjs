@@ -87,7 +87,7 @@ export default async function handler(request, context) {
     const pick = (r) => ({ makeup: r.makeup, perfume: r.perfume, total: r.total });
     const summary = { today: pick(sumDays(today)), last7: pick(sumDays(addDays(today, -6))), last30: pick(sumDays(addDays(today, -29))) };
 
-    sweepGuards(strongStore('rate-guard')).catch(() => {}); // housekeeping, best effort
+    sweepGuards().catch(() => {}); // housekeeping, best effort
 
     return json(200, {
       range, days: rangeDays, from: addDays(today, -(rangeDays - 1)), to: today,
