@@ -15,7 +15,7 @@ const db={prepare(sql){return {bind(...args){return {
   throw Error('Unexpected list SQL: '+sql);
  },
  async first(){
-  if(sql.startsWith('SELECT value FROM app_records')){const [store,key]=args;const value=records.get(store+'|'+key);return value===undefined?null:{value};}
+  if(sql.startsWith('SELECT hits FROM rate_windows'))return null;  if(sql.startsWith('SELECT value FROM app_records')){const [store,key]=args;const value=records.get(store+'|'+key);return value===undefined?null:{value};}
   throw Error('Unexpected read SQL: '+sql);
  }
 }}}}};
