@@ -3,6 +3,7 @@
 # applies the schema + dev migration, then runs cloudflare/tests/e2e-pages-runtime.mjs.
 # Uses only generated test secrets; never touches a remote database.
 #   WRANGLER=/path/to/wrangler tools/e2e-local.sh
+#   MODE=production DB_BINDING=PROD_DB tools/e2e-local.sh   # production configuration
 set -euo pipefail
 cd "$(dirname "$0")/.."
 WRANGLER="${WRANGLER:-npx --yes wrangler@3}"
@@ -14,7 +15,7 @@ cleanup(){ pkill -f "pages dev public --port $PORT" 2>/dev/null || true; pkill -
 trap cleanup EXIT
 export WRANGLER_SEND_METRICS=false
 $WRANGLER pages dev public --port "$PORT" --compatibility-date=2026-11-01 --persist-to "$STATE" \
-  --d1 DEV_DB=e2e-local --binding DEPLOYMENT_ENV=development \
+  --d1 "${DB_BINDING:-DEV_DB}=e2e-local" --binding "DEPLOYMENT_ENV=${MODE:-development}" \
   --binding "RATE_LIMIT_SALT=$SALT" --binding "ADMIN_PASSWORD=$PASS" >"$STATE/server.log" 2>&1 &
 for _ in $(seq 1 90); do curl -s -o /dev/null "http://127.0.0.1:$PORT/" && break; sleep 1; done
 curl -s -o /dev/null "http://127.0.0.1:$PORT/api/health"   # materialise the local D1 file
@@ -26,4 +27,4 @@ for f in ['cloudflare/schema.sql','cloudflare/schema-community.sql','cloudflare/
     c.executescript(open(f,encoding='utf-8').read())
 c.commit()
 EOF
-BASE_URL="http://localhost:$PORT" ADMIN_PASSWORD="$PASS" node cloudflare/tests/e2e-pages-runtime.mjs
+EXPECT_SERVICE="makeup-unwan-${MODE:-development}" BASE_URL="http://localhost:$PORT" ADMIN_PASSWORD="$PASS" node cloudflare/tests/e2e-pages-runtime.mjs

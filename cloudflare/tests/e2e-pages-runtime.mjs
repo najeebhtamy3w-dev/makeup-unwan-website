@@ -26,7 +26,7 @@ async function open(path){
 }
 
 // 1. Health: dev database bound and schema complete.
-{const r=await fetch(BASE+'/api/health');const j=await r.json();assert.deepEqual(j,{ok:true,service:'makeup-unwan-development'});ok('health','D1 + schema');}
+{const r=await fetch(BASE+'/api/health');const j=await r.json();assert.deepEqual(j,{ok:true,service:process.env.EXPECT_SERVICE||'makeup-unwan-development'});ok('health','D1 + schema');}
 
 // 2. Landing page, both stores, about sections, all official contact links present.
 const home=await open('/');
@@ -85,6 +85,25 @@ let postId;
  const report=await p.evaluate(async id=>(await fetch('/.netlify/functions/community?action=report',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id})})).status,postId);
  assert.equal(report,201);
  await p.close();ok('community','post + reaction + report stored and read back');
+}
+
+// 5b. «بيننا» (comparison poll stored in D1 + vote), «عالمي» (device-local wishes), «اكتشف» (tab opens).
+{
+ const p=await open('/masahatak.html');
+ await p.click('[data-tab="baynana"]');await p.waitForFunction(()=>document.getElementById('baynana').classList.contains('active'));
+ await p.fill('#question','أي هدية أجمل؟ '+stamp.slice(-6));await p.fill('#choice1','باقة عطر');await p.fill('#choice2','طقم عناية');
+ const resp=p.waitForResponse(r=>r.url().includes('action=poll-create'));await p.click('#make-compare');
+ const r=await resp;assert.equal(r.status(),201,'poll created');const poll=await r.json();
+ const pid=poll.id||new URL(String(poll.url||poll.link||''),BASE).searchParams.get('poll');assert.ok(pid,'poll id returned: '+JSON.stringify(poll));
+ const vote=await p.evaluate(async id=>(await fetch('/.netlify/functions/community?action=poll-vote',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,choice:0})})).status,pid);
+ assert.ok([200,201].includes(vote),'vote stored: '+vote);
+ const counts=await p.evaluate(async id=>(await (await fetch('/.netlify/functions/community?action=poll&id='+id)).json()).counts,pid);
+ assert.ok(JSON.stringify(counts).includes('1'),'vote read back: '+JSON.stringify(counts));
+ await p.click('[data-tab="alami"]');await p.waitForFunction(()=>document.getElementById('alami').classList.contains('active'));
+ await p.fill('#wish','أمنية '+stamp);await p.click('#add-wish');
+ await p.waitForFunction(s=>document.getElementById('wish-list').textContent.includes(s),stamp,{timeout:5000});
+ await p.click('[data-tab="discover"]');await p.waitForFunction(()=>document.getElementById('discover').classList.contains('active'));
+ await p.close();ok('baynana/alami/discover','poll stored + vote read back; wish saved locally; discover opens');
 }
 
 // 6. Admin center: wrong password, login, message + click visible, community moderation round-trip.

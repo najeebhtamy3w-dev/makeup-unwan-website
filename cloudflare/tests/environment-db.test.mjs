@@ -21,9 +21,9 @@ assert.equal(resolveAppDatabase({DEPLOYMENT_ENV:'development',DEV_DB:'makeup-unw
 // Diagnosis names the failing condition and only reports presence, never values.
 const diag=env=>diagnoseAppDatabase(env);
 assert.equal(diag({DEPLOYMENT_ENV:'development',DEV_DB:development}),null);
-assert.deepEqual(diag({DEV_DB:development,STAGING_DB:staging}),{reason:'deployment_env_missing',expectedBinding:null,present:{ASSETS:false,DEPLOYMENT_ENV:false,DEV_DB:true,STAGING_DB:true,ADMIN_PASSWORD:false,RATE_LIMIT_SALT:false}});
+assert.deepEqual(diag({DEV_DB:development,STAGING_DB:staging}),{reason:'deployment_env_missing',expectedBinding:null,present:{ASSETS:false,DEPLOYMENT_ENV:false,DEV_DB:true,STAGING_DB:true,PROD_DB:false,ADMIN_PASSWORD:false,RATE_LIMIT_SALT:false}});
 assert.equal(diag({DEPLOYMENT_ENV:'preview',DEV_DB:development}).reason,'deployment_env_unrecognized');
-assert.deepEqual(diag({DEPLOYMENT_ENV:'development',STAGING_DB:staging}),{reason:'dev_db_not_bound',expectedBinding:'DEV_DB',present:{ASSETS:false,DEPLOYMENT_ENV:true,DEV_DB:false,STAGING_DB:true,ADMIN_PASSWORD:false,RATE_LIMIT_SALT:false}});
+assert.deepEqual(diag({DEPLOYMENT_ENV:'development',STAGING_DB:staging}),{reason:'dev_db_not_bound',expectedBinding:'DEV_DB',present:{ASSETS:false,DEPLOYMENT_ENV:true,DEV_DB:false,STAGING_DB:true,PROD_DB:false,ADMIN_PASSWORD:false,RATE_LIMIT_SALT:false}});
 assert.equal(diag({DEPLOYMENT_ENV:'development',DEV_DB:'makeup-unwan-dev-test'}).reason,'dev_db_not_d1');
 const leaked=JSON.stringify(diag({DEPLOYMENT_ENV:'development',DEV_DB:'secret-db-id-123',STAGING_DB:staging,ADMIN_PASSWORD:'p'.repeat(20)}));
 assert.ok(!leaked.includes('secret-db-id-123')&&!leaked.includes('ppppp'),'diagnosis must not echo values');
@@ -35,4 +35,12 @@ const partial=await onRequestGet({env:{DEPLOYMENT_ENV:'development',DEV_DB:fakeD
 assert.equal(partial.status,503);assert.deepEqual((await partial.json()).missingTables,['community_reaction_selections']);
 const broken=await onRequestGet({env:{DEPLOYMENT_ENV:'development',DEV_DB:{prepare(){throw Error('down')}}}});
 assert.equal(broken.status,503);
-console.log('PASS D1 development/staging isolation, safe refusal, non-secret diagnosis and schema health');
+// Production: ONLY PROD_DB, never DEV_DB or STAGING_DB, even if they are bound too.
+const prod=fakeD1();
+assert.equal(resolveAppDatabase({DEPLOYMENT_ENV:'production',PROD_DB:prod,DEV_DB:development,STAGING_DB:staging}),prod);
+assert.equal(resolveAppDatabase({DEPLOYMENT_ENV:'production',DEV_DB:development,STAGING_DB:staging}),null,'production never falls back');
+assert.equal(resolveAppDatabase({DEPLOYMENT_ENV:'development',PROD_DB:prod}),null,'development never uses PROD_DB');
+assert.equal(resolveAppDatabase({DEPLOYMENT_ENV:'staging',PROD_DB:prod}),null,'staging never uses PROD_DB');
+assert.equal(diagnoseAppDatabase({DEPLOYMENT_ENV:'production',DEV_DB:development}).reason,'prod_db_not_bound');
+assert.deepEqual(await (await onRequestGet({env:{DEPLOYMENT_ENV:'production',PROD_DB:prod}})).json(),{ok:true,service:'makeup-unwan-production'});
+console.log('PASS D1 development/staging isolation, safe refusal, non-secret diagnosis and schema health, production isolation');
