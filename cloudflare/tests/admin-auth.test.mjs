@@ -70,6 +70,11 @@ async function call(fn,env,{password=PASSWORD,ip='192.0.2.10',path='/.netlify/fu
  const db=makeDb();
  const missing=async env=>(await call(session,env)).body;
  assert.equal((await missing({DEPLOYMENT_ENV:'development',RATE_LIMIT_SALT:'s'.repeat(64),ADMIN_PASSWORD:PASSWORD})).missing,'database');
+ const noDevDb=await missing({DEPLOYMENT_ENV:'development',STAGING_DB:db,RATE_LIMIT_SALT:'s'.repeat(64),ADMIN_PASSWORD:PASSWORD});
+ assert.equal(noDevDb.missing,'database');assert.equal(noDevDb.database.reason,'dev_db_not_bound','dev never falls back to STAGING_DB');
+ assert.deepEqual(noDevDb.database.present,{DEPLOYMENT_ENV:true,DEV_DB:false,STAGING_DB:true});
+ assert.ok(!JSON.stringify(noDevDb).includes(PASSWORD),'diagnosis must not leak the password');
+ assert.equal((await call(session,{...envFor(db),DEPLOYMENT_ENV:'development '})).status,200,'trailing space in DEPLOYMENT_ENV tolerated');
  assert.equal((await missing({...envFor(db),RATE_LIMIT_SALT:'short'})).missing,'rate_limit_salt');
  const shortPw=await call(session,{...envFor(db),ADMIN_PASSWORD:'short'});
  assert.equal(shortPw.status,503);assert.equal(shortPw.body.code,'ADMIN_NOT_CONFIGURED');assert.equal(shortPw.body.missing,'admin_password');

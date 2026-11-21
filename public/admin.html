@@ -42,7 +42,7 @@ async function fetchFeedback(pass){let r;try{r=await fetch('/.netlify/functions/
 function adminErrorMessage(status,data,fallback){
  if(status===401)return 'كلمة المرور غير صحيحة. تأكد من الأحرف الكبيرة والصغيرة (لوحة مفاتيح الهاتف قد تكبّر الحرف الأول).';
  if(status===429){const m=Math.ceil((Number(data&&data.retryAfter)||900)/60);return 'محاولات كثيرة: تم إيقاف الدخول مؤقتًا بعد عدة محاولات خاطئة. حاول بعد '+m+' دقيقة تقريبًا.'}
- if(status===503&&data&&data.code==='ADMIN_NOT_CONFIGURED')return 'لوحة الإدارة غير مهيأة على الخادم (إعداد ناقص: '+String(data.missing||'غير معروف')+'). هذه ليست مشكلة في كلمة المرور.';
+ if(status===503&&data&&data.code==='ADMIN_NOT_CONFIGURED'){const db=data.database;const extra=db&&db.reason?' — '+String(db.reason)+(db.present?' [DEPLOYMENT_ENV:'+(db.present.DEPLOYMENT_ENV?'نعم':'لا')+'، DEV_DB:'+(db.present.DEV_DB?'نعم':'لا')+'، STAGING_DB:'+(db.present.STAGING_DB?'نعم':'لا')+']':''):'';return 'لوحة الإدارة غير مهيأة على الخادم (إعداد ناقص: '+String(data.missing||'غير معروف')+extra+'). هذه ليست مشكلة في كلمة المرور.'}
  if(status===503&&data&&data.error)return data.error+' (503)';
  return (data&&data.error)||(fallback+' ('+status+')');
 }

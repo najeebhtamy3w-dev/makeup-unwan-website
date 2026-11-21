@@ -1,4 +1,4 @@
-import {resolveAppDatabase} from './environment-db.mjs';
+import {resolveAppDatabase,diagnoseAppDatabase} from './environment-db.mjs';
 // Staging/development admin authentication. Never log credentials or raw IP.
 import {checkRateLimit} from './atomic-rate-limit.mjs';
 const bytes=s=>new TextEncoder().encode(s);
@@ -33,7 +33,7 @@ async function failedAttempts(db,bucket,windowStart){
 export async function requireStagingAdmin(request,env,{now=Date.now()}={}){
  const fail=(status,error,code,extra={},headers={})=>Response.json({error,code,...extra},{status,headers:{'cache-control':'no-store',...headers}});
  const problem=adminConfigProblem(env);
- if(problem)return fail(503,'لوحة الإدارة غير مهيأة على الخادم','ADMIN_NOT_CONFIGURED',{missing:problem});
+ if(problem)return fail(503,'لوحة الإدارة غير مهيأة على الخادم','ADMIN_NOT_CONFIGURED',{missing:problem,...(problem==='database'?{database:diagnoseAppDatabase(env)}:{})});
  const db=resolveAppDatabase(env);
  const ip=request.headers.get('cf-connecting-ip')||'unknown';
  const bucket=Array.from((await digest(env.RATE_LIMIT_SALT,ip)).slice(0,8),b=>b.toString(16).padStart(2,'0')).join('');

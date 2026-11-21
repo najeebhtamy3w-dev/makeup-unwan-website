@@ -71,7 +71,7 @@
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
     X-Robots-Tag = "noindex, nofollow"
     Cache-Control = "no-store"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'sha256-cA9DUODum9udWxZMjQIPrg1BZxVomTFr54xdxlQJNv0='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'sha256-diaH2/y/Vrp7qAxFGnlKJ7epiFJlsHdVgyQaxN1qhYA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
 
 [[headers]]
   for = "/admin.html"
@@ -83,4 +83,4 @@
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
     X-Robots-Tag = "noindex, nofollow"
     Cache-Control = "no-store"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'sha256-cA9DUODum9udWxZMjQIPrg1BZxVomTFr54xdxlQJNv0='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'sha256-diaH2/y/Vrp7qAxFGnlKJ7epiFJlsHdVgyQaxN1qhYA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"

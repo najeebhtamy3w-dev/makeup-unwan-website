@@ -59,6 +59,10 @@ await scenario('lockout 429 shows wait time, not "wrong password"',{sessionStatu
 await scenario('server not configured 503 says it is not the password',{sessionStatus:503,sessionBody:{error:'x',code:'ADMIN_NOT_CONFIGURED',missing:'admin_password'}},async page=>{
  await page.waitForFunction(()=>document.getElementById('loginError').textContent.includes('ليست مشكلة في كلمة المرور'),null,{timeout:5000});
 });
+await scenario('missing database shows which binding is absent',{sessionStatus:503,sessionBody:{error:'x',code:'ADMIN_NOT_CONFIGURED',missing:'database',database:{reason:'dev_db_not_bound',expectedBinding:'DEV_DB',present:{DEPLOYMENT_ENV:true,DEV_DB:false,STAGING_DB:true}}}},async page=>{
+ await page.waitForFunction(()=>document.getElementById('loginError').textContent.includes('dev_db_not_bound'),null,{timeout:5000});
+ const t=await page.textContent('#loginError');assert.ok(t.includes('DEV_DB:لا')&&t.includes('STAGING_DB:نعم'),t);
+});
 await scenario('community moderation inside the dashboard, no second login',{},async(page,calls)=>{
  await loginHidden(page);
  await page.click('[data-page="community"]');
